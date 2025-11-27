@@ -208,3 +208,26 @@ tbody tr:nth-child(even) {
 .utc-row .tz-cell {
   color: #003f7d !important;
 }
+
+.slot-good {
+  background-color: rgba(34, 197, 94, 0.15);  /* green-ish */
+}
+
+.slot-okay {
+  background-color: rgba(234, 179, 8, 0.18);  /* amber */
+}
+
+.slot-bad {
+  background-color: rgba(248, 113, 113, 0.20); /* red-ish */
+}
+
+.slot-bad .twelve-hour {
+  color: #b91c1c;
+}
+
+.option-stats {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  display: block;
+  margin-top: 2px;
+}
