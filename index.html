@@ -8,115 +8,112 @@
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-  <!-- Your CSS -->
+  <!-- Shared CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <h1>Crimson Cuckoo Coven Member Time Zone Board</h1>
   <div class="subtitle">
-    See everyone’s current time, plus multiple UTC-based event options in one board.
+    Quick reference for everyone’s current time, plus an event options planner below.
   </div>
 
-  <!-- Picker / Controls -->
+  <!-- Local time + quick reference -->
   <div class="card">
-    <div class="controls">
-      <!-- Left side: Event options + title -->
-      <div class="control-group">
-        <label>Event Time Board Title</label>
-        <input
-          id="eventBoardTitle"
-          type="text"
-          placeholder="Event Time Board (click to rename)"
-          style="margin-bottom: 0.75rem; width: 100%; padding: 6px;"
-        />
+    <div class="control-group">
+      <label>
+        Now (your local):
+        <span id="localTzLabel" class="highlight"></span>
+      </label>
+      <div id="localNow" class="highlight"></div>
+      <div id="localTzPrint" class="small-note"></div>
 
-        <label>Event options (times in UTC)</label>
-        <div class="small-note">
-          Set up to four UTC event times. The board converts them to each member’s local time.
-        </div>
-
-        <!-- Option 1 -->
-        <div class="small-note" style="margin-top:0.5rem;">Option 1 (UTC)</div>
-        <input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-        <!-- Option 2 -->
-        <div class="small-note" style="margin-top:0.7rem;">Option 2 (UTC)</div>
-        <input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-        <!-- Option 3 -->
-        <div class="small-note" style="margin-top:0.7rem;">Option 3 (UTC)</div>
-        <input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-        <!-- Option 4 -->
-        <div class="small-note" style="margin-top:0.7rem;">Option 4 (UTC)</div>
-        <input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-        <div class="small-note" style="margin-top:0.7rem;">
-          All event times above are treated as UTC. The board shows each member’s local time.
-        </div>
+      <div class="chip">
+        <span class="chip-dot"></span>
+        <span>Auto-updates</span>
       </div>
 
-      <!-- Right side: Local time -->
-      <div class="control-group">
-        <label>
-          Now (your local):
-          <span id="localTzLabel" class="highlight"></span>
-        </label>
-        <div id="localNow" class="highlight"></div>
-        <div id="localTzPrint" class="small-note"></div>
-
-        <div class="chip">
-          <span class="chip-dot"></span>
-          <span>Auto-updates</span>
-        </div>
+      <div class="small-note" style="margin-top:0.75rem;">
+        Scroll down to the Event Planner to compare up to four UTC-based options for everyone.
       </div>
     </div>
   </div>
 
-  <!-- Tables row: Current + Event side by side -->
-  <div class="table-row">
-    <!-- Current time table -->
-    <div class="card table-card">
-      <div class="card-title">Current Time Board</div>
-      <div class="small-note">Live view of what time it is for everyone right now.</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Current Time</th>
-          </tr>
-        </thead>
-        <tbody id="currentBody"></tbody>
-      </table>
-    </div>
+  <!-- Current time table -->
+  <div class="card table-card">
+    <div class="card-title">Current Time Board</div>
+    <div class="small-note">Live view of what time it is for everyone right now.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Current Time</th>
+        </tr>
+      </thead>
+      <tbody id="currentBody"></tbody>
+    </table>
+  </div>
 
-    <!-- Event time table -->
-    <div class="card table-card">
-      <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
+  <!-- Event planner controls -->
+  <div class="card">
+    <div class="control-group">
+      <label>Event Time Board Title</label>
+      <input
+        id="eventBoardTitle"
+        type="text"
+        placeholder="Event Time Board (click to rename)"
+        style="margin-bottom: 0.75rem; width: 100%; padding: 6px;"
+      />
+
+      <label>Event options (times in UTC)</label>
       <div class="small-note">
-        Shows all four event options at once. Column headers show UTC event times.
+        Set up to four UTC event times. The Event Time Board converts them to each member’s local time.
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th id="optionHeader1">Option 1</th>
-            <th id="optionHeader2">Option 2</th>
-            <th id="optionHeader3">Option 3</th>
-            <th id="optionHeader4">Option 4</th>
-          </tr>
-        </thead>
-        <tbody id="eventBody"></tbody>
-      </table>
+
+      <!-- Option 1 -->
+      <div class="small-note" style="margin-top:0.5rem;">Option 1 (UTC)</div>
+      <input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+      <!-- Option 2 -->
+      <div class="small-note" style="margin-top:0.7rem;">Option 2 (UTC)</div>
+      <input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+      <!-- Option 3 -->
+      <div class="small-note" style="margin-top:0.7rem;">Option 3 (UTC)</div>
+      <input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+      <!-- Option 4 -->
+      <div class="small-note" style="margin-top:0.7rem;">Option 4 (UTC)</div>
+      <input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+      <div class="small-note" style="margin-top:0.7rem;">
+        All event times above are treated as UTC. The board below shows each member’s local time.
+      </div>
     </div>
+  </div>
+
+  <!-- Event time table -->
+  <div class="card table-card">
+    <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th id="optionHeader1">Option 1</th>
+          <th id="optionHeader2">Option 2</th>
+          <th id="optionHeader3">Option 3</th>
+          <th id="optionHeader4">Option 4</th>
+        </tr>
+      </thead>
+      <tbody id="eventBody"></tbody>
+    </table>
   </div>
 
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
   <script>
-    // ===== Members & time zones =====
+    // ===== Members & time zones (single source of truth) =====
     const members = [
       { name: "Universal (UTC)",                    timeZone: "UTC" },
 
@@ -143,6 +140,7 @@
       { utcDate: null },
     ];
 
+    // DOM refs
     const currentBody    = document.getElementById("currentBody");
     const eventBody      = document.getElementById("eventBody");
     const localNowEl     = document.getElementById("localNow");
@@ -156,15 +154,15 @@
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
 
-    // Update Event Time Board title live
+    // Title live update
     eventBoardTitleInput.addEventListener("input", () => {
       const text = eventBoardTitleInput.value.trim();
       eventBoardTitleDisplay.textContent = text || "Event Time Board";
     });
 
-    // ===== Time formatting helpers =====
+    // ===== Time helpers =====
 
-    // Dual-format on two lines:
+    // Two-line time: 24h then 12h (no parentheses)
     function dualFormat(date, timeZone) {
       if (!date) return "—";
 
@@ -190,7 +188,7 @@
       return `${f24}<br><span class="twelve-hour">${f12}</span>`;
     }
 
-    // Timezone label formatter, e.g. "(MST / GMT-7)" or "(GMT+8)"
+    // Timezone label, e.g. "(MST / GMT-7)" or "(GMT+8)"
     function getZoneLabel(timeZone) {
       const now = new Date();
 
@@ -239,7 +237,7 @@
       return `(${abbr} / ${offset})`;
     }
 
-    // Convert a date into a numeric sortable timestamp in a given zone
+    // Zoned timestamp for sorting
     function getZonedTimestamp(date, timeZone) {
       const zoned = new Date(date.toLocaleString("en-US", { timeZone }));
       return zoned.getTime();
@@ -253,7 +251,7 @@
       });
     }
 
-    // Interpret local-picked date/time as UTC clock time
+    // Interpret flatpickr selection as UTC clock time
     function localSelectionToUTC(date) {
       if (!date) return null;
       return new Date(Date.UTC(
@@ -267,7 +265,7 @@
       ));
     }
 
-    // ===== Render Current Time table + "Now (your local)" =====
+    // ===== Render Current Time board =====
     function renderCurrent() {
       const now = new Date();
       localNowEl.innerHTML = dualFormat(now, localTimeZone);
@@ -290,9 +288,9 @@
       });
     }
 
-    // ===== Render Event Time board with 4 options =====
+    // ===== Render Event Time board =====
     function renderEventBoard() {
-      // Update header labels with UTC time for each option
+      // Update column headers with UTC display
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const headerEl = document.getElementById(`optionHeader${i + 1}`);
         const opt = eventOptions[i];
@@ -308,7 +306,7 @@
 
       eventBody.innerHTML = "";
 
-      // 🔹 Use the SAME sort order as Current Time Board
+      // Match row order with Current Time Board
       const now = new Date();
       const sortedMembers = sortMembersByLocalTime(now);
 
@@ -339,7 +337,7 @@
       });
     }
 
-    // ===== Setup Flatpickr for each event option (UTC inputs) =====
+    // ===== Setup Flatpickr for four UTC options =====
     function setupEventInputs() {
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const timeInput = document.getElementById(`eventTime${i + 1}`);
@@ -357,12 +355,12 @@
       }
     }
 
-    // ===== Initial render =====
+    // ===== Initial setup & loops =====
     setupEventInputs();
     renderCurrent();
     renderEventBoard();
 
-    // Live auto-update for current time table (every second)
+    // Auto-update Current Time Board + local clock every second
     setInterval(renderCurrent, 1000);
   </script>
 </body>
