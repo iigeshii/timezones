@@ -15,42 +15,54 @@
 <body>
   <h1>Crimson Cuckoo Coven Member Time Zone Board</h1>
   <div class="subtitle">
-    See everyone’s current time, plus a clean event-time table for Discord.
+    See everyone’s current time, plus multiple UTC-based event options in one board.
   </div>
 
   <!-- Picker / Controls -->
   <div class="card">
     <div class="controls">
+      <!-- Left side: Event options + title -->
       <div class="control-group">
-        <label>
-          Event date & time
-          <span class="small-note">
-            (in <span id="localTzLabel" class="highlight"></span>)
-          </span>
-        </label>
+        <label>Event Time Board Title</label>
+        <input
+          id="eventBoardTitle"
+          type="text"
+          placeholder="Event Time Board (click to rename)"
+          style="margin-bottom: 0.75rem; width: 100%; padding: 6px;"
+        />
 
-        <!-- Flatpickr input -->
-        <input id="eventDateTime" type="text" placeholder="Pick date & time" />
-
-        <div class="quick-buttons">
-          <button type="button" class="quick-button" data-preset="tonight">
-            Tonight 20:00
-          </button>
-          <button type="button" class="quick-button" data-preset="tomorrow-evening">
-            Tomorrow 19:00
-          </button>
-          <button type="button" class="quick-button" data-preset="next-sat-afternoon">
-            Next Saturday 14:00
-          </button>
+        <label>Event options (times in UTC)</label>
+        <div class="small-note">
+          Set up to four UTC event times. The board converts them to each member’s local time.
         </div>
 
-        <div class="small-note">
-          Click the field to open a calendar + clock picker, or use a preset.
+        <!-- Option 1 -->
+        <div class="small-note" style="margin-top:0.5rem;">Option 1 (UTC)</div>
+        <input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <!-- Option 2 -->
+        <div class="small-note" style="margin-top:0.7rem;">Option 2 (UTC)</div>
+        <input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <!-- Option 3 -->
+        <div class="small-note" style="margin-top:0.7rem;">Option 3 (UTC)</div>
+        <input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <!-- Option 4 -->
+        <div class="small-note" style="margin-top:0.7rem;">Option 4 (UTC)</div>
+        <input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <div class="small-note" style="margin-top:0.7rem;">
+          All event times above are treated as UTC. The board shows each member’s local time.
         </div>
       </div>
 
+      <!-- Right side: Local time -->
       <div class="control-group">
-        <label>Now (your local):</label>
+        <label>
+          Now (your local):
+          <span id="localTzLabel" class="highlight"></span>
+        </label>
         <div id="localNow" class="highlight"></div>
         <div id="localTzPrint" class="small-note"></div>
 
@@ -81,13 +93,18 @@
 
     <!-- Event time table -->
     <div class="card table-card">
-      <div class="card-title">Event Time Board</div>
-      <div class="small-note">Screenshot this table after choosing an event time.</div>
+      <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
+      <div class="small-note">
+        Shows all four event options at once. Column headers show UTC event times.
+      </div>
       <table>
         <thead>
           <tr>
             <th>Member</th>
-            <th>Event Time</th>
+            <th id="optionHeader1">Option 1</th>
+            <th id="optionHeader2">Option 2</th>
+            <th id="optionHeader3">Option 3</th>
+            <th id="optionHeader4">Option 4</th>
           </tr>
         </thead>
         <tbody id="eventBody"></tbody>
@@ -118,22 +135,37 @@
       { name: "Flameboi789 / Flame7484",            timeZone: "America/Los_Angeles" },
     ];
 
+    const EVENT_OPTION_COUNT = 4;
+    const eventOptions = [
+      { utcDate: null },
+      { utcDate: null },
+      { utcDate: null },
+      { utcDate: null },
+    ];
+
     const currentBody    = document.getElementById("currentBody");
     const eventBody      = document.getElementById("eventBody");
     const localNowEl     = document.getElementById("localNow");
-    const localTzLabel   = document.getElementById("localTzLabel");
     const localTzPrint   = document.getElementById("localTzPrint");
-    const eventDateTime  = document.getElementById("eventDateTime");
-    const quickButtons   = document.querySelectorAll(".quick-button");
+    const localTzLabel   = document.getElementById("localTzLabel");
+
+    const eventBoardTitleInput   = document.getElementById("eventBoardTitle");
+    const eventBoardTitleDisplay = document.getElementById("eventBoardTitleDisplay");
 
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
 
+    // Update Event Time Board title live
+    eventBoardTitleInput.addEventListener("input", () => {
+      const text = eventBoardTitleInput.value.trim();
+      eventBoardTitleDisplay.textContent = text || "Event Time Board";
+    });
+
     // ===== Time formatting helpers =====
 
-    // Returns:
-    // "Fri, Nov 29, 17:09:46<br>(5:09:46 PM)"
+    // Dual-format on two lines:
+    // "Fri, Nov 29, 17:09:46<br><span class='twelve-hour'>5:09:46 PM</span>"
     function dualFormat(date, timeZone) {
       if (!date) return "—";
 
@@ -156,13 +188,10 @@
         timeZone,
       }).format(date);
 
-      // Two-line output using <br>
       return `${f24}<br><span class="twelve-hour">${f12}</span>`;
     }
 
-
-    // Timezone label formatter:
-    // "(MST / GMT-7)", "(IST / GMT+05:30)", or "(GMT+8)" if abbrev == offset
+    // Timezone label formatter, e.g. "(MST / GMT-7)" or "(GMT+8)"
     function getZoneLabel(timeZone) {
       const now = new Date();
 
@@ -186,18 +215,18 @@
       offset = offset.replace("UTC", "GMT");
 
       const preferredAbbr = {
-        "Europe/Berlin":      "CET",
-        "Europe/Amsterdam":   "CET",
-        "Europe/London":      "GMT",
-        "Asia/Singapore":     "SGT",
-        "America/Phoenix":    "MST",
-        "America/Chicago":    "CST",
-        "America/New_York":   "EST",
-        "America/Regina":     "CST",
-        "Asia/Kolkata":       "IST",
-        "Asia/Manila":        "PHT",
-        "America/Los_Angeles":"PST",
-        "UTC":                "UTC",
+        "Europe/Berlin":       "CET",
+        "Europe/Amsterdam":    "CET",
+        "Europe/London":       "GMT",
+        "Asia/Singapore":      "SGT",
+        "America/Phoenix":     "MST",
+        "America/Chicago":     "CST",
+        "America/New_York":    "EST",
+        "America/Regina":      "CST",
+        "Asia/Kolkata":        "IST",
+        "Asia/Manila":         "PHT",
+        "America/Los_Angeles": "PST",
+        "UTC":                 "UTC",
       };
 
       if ((abbr === offset || abbr === "") && preferredAbbr[timeZone]) {
@@ -217,19 +246,32 @@
       return zoned.getTime();
     }
 
-    // Sort members by their local time at a given date (descending)
     function sortMembersByLocalTime(date) {
       return [...members].sort((a, b) => {
         const ta = getZonedTimestamp(date, a.timeZone);
         const tb = getZonedTimestamp(date, b.timeZone);
-        return tb - ta; // newest (largest) first
+        return tb - ta; // newest first
       });
+    }
+
+    // Interpret local-picked date/time as UTC clock time
+    function localSelectionToUTC(date) {
+      if (!date) return null;
+      return new Date(Date.UTC(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        date.getHours(),
+        date.getMinutes(),
+        date.getSeconds(),
+        date.getMilliseconds()
+      ));
     }
 
     // ===== Render Current Time table + "Now (your local)" =====
     function renderCurrent() {
       const now = new Date();
-      localNowEl.textContent = dualFormat(now, localTimeZone);
+      localNowEl.innerHTML = dualFormat(now, localTimeZone);
 
       const sorted = sortMembersByLocalTime(now);
       currentBody.innerHTML = "";
@@ -249,83 +291,73 @@
       });
     }
 
-    // ===== Render Event Time table =====
-    function renderEvent(eventDate) {
-      eventBody.innerHTML = "";
+    // ===== Render Event Time board with 4 options =====
+    function renderEventBoard() {
+      // Update header labels with UTC time for each option
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const headerEl = document.getElementById(`optionHeader${i + 1}`);
+        const opt = eventOptions[i];
 
-      if (!eventDate) {
-        members.forEach(m => {
-          const label = getZoneLabel(m.timeZone);
-          eventBody.innerHTML += `
-            <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
-              <td class="name-cell">
-                ${m.name}
-                <div class="tz-cell">${m.timeZone} ${label}</div>
-              </td>
-              <td>Pick a date/time</td>
-            </tr>
-          `;
-        });
-        return;
+        let label = `Option ${i + 1}`;
+        if (opt.utcDate) {
+          const utcDisplay = dualFormat(opt.utcDate, "UTC");
+          label += `<br><span class="twelve-hour">UTC: ${utcDisplay}</span>`;
+        }
+
+        headerEl.innerHTML = label;
       }
 
-      const sorted = sortMembersByLocalTime(eventDate);
+      eventBody.innerHTML = "";
 
-      sorted.forEach(m => {
+      members.forEach(m => {
         const label = getZoneLabel(m.timeZone);
-        eventBody.innerHTML += `
+
+        let row = `
           <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
             <td class="name-cell">
               ${m.name}
               <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
-            <td>${dualFormat(eventDate, m.timeZone)}</td>
-          </tr>
         `;
+
+        for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+          const opt = eventOptions[i];
+          let cellContent = "Pick a date/time";
+
+          if (opt.utcDate) {
+            cellContent = dualFormat(opt.utcDate, m.timeZone);
+          }
+
+          row += `<td>${cellContent}</td>`;
+        }
+
+        row += `</tr>`;
+        eventBody.innerHTML += row;
       });
     }
 
-    // ===== Flatpickr date+time picker =====
-    const fp = flatpickr(eventDateTime, {
-      enableTime: true,
-      time_24hr: false, // users pick in 12h picker, display is dual-format anyway
-      dateFormat: "Y-m-d H:i",
-      defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // +1 day
-      onChange: (selectedDates) => {
-        const dt = selectedDates[0] || null;
-        renderEvent(dt);
+    // ===== Setup Flatpickr for each event option (UTC inputs) =====
+    function setupEventInputs() {
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const timeInput = document.getElementById(`eventTime${i + 1}`);
+
+        flatpickr(timeInput, {
+          enableTime: true,
+          time_24hr: true,
+          dateFormat: "Y-m-d H:i",
+          onChange: (selectedDates) => {
+            const localDate = selectedDates[0] || null;
+            eventOptions[i].utcDate = localSelectionToUTC(localDate);
+            renderEventBoard();
+          }
+        });
       }
-    });
-
-    // ===== Preset buttons =====
-    function applyPreset(preset) {
-      const now = new Date();
-      let t = new Date(now);
-
-      if (preset === "tonight") {
-        t.setHours(20, 0, 0, 0);
-        if (t < now) t.setDate(t.getDate() + 1);
-      } else if (preset === "tomorrow-evening") {
-        t.setDate(t.getDate() + 1);
-        t.setHours(19, 0, 0, 0);
-      } else if (preset === "next-sat-afternoon") {
-        const day = t.getDay(); // 0 = Sun
-        const daysUntilSat = (6 - day + 7) % 7 || 7;
-        t.setDate(t.getDate() + daysUntilSat);
-        t.setHours(14, 0, 0, 0);
-      }
-
-      fp.setDate(t, true); // triggers onChange => renderEvent
     }
 
-    quickButtons.forEach(btn =>
-      btn.addEventListener("click", () => applyPreset(btn.dataset.preset))
-    );
-
     // ===== Initial render =====
-    const initialEvent = fp.selectedDates[0] || null;
+    setupEventInputs();
     renderCurrent();
-    renderEvent(initialEvent);
+    renderEventBoard();
 
     // Live auto-update for current time table (every second)
     setInterval(renderCurrent, 1000);
