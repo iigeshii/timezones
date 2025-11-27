@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crimson Cuckoo Coven Member Time Zone Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <!-- Your CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <h1>Crimson Cuckoo Coven Member Time Zone Board</h1>
+  <div class="subtitle">
+    See everyone’s current time, plus a clean event-time table for Discord.
+  </div>
+
+  <!-- Picker / Controls -->
+  <div class="card">
+    <div class="controls">
+      <div class="control-group">
+        <label>
+          Event date & time
+          <span class="small-note">
+            (in <span id="localTzLabel" class="highlight"></span>)
+          </span>
+        </label>
+
+        <!-- Flatpickr input -->
+        <input id="eventDateTime" type="text" placeholder="Pick date & time" />
+
+        <div class="quick-buttons">
+          <button type="button" class="quick-button" data-preset="tonight">
+            Tonight 8:00 PM
+          </button>
+          <button type="button" class="quick-button" data-preset="tomorrow-evening">
+            Tomorrow 7:00 PM
+          </button>
+          <button type="button" class="quick-button" data-preset="next-sat-afternoon">
+            Next Saturday 2:00 PM
+          </button>
+        </div>
+
+        <div class="small-note">
+          Click the field to open a calendar + clock picker, or use a preset.
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Now (your local):</label>
+        <div id="localNow" class="highlight"></div>
+        <div id="localTzPrint" class="small-note"></div>
+
+        <div class="chip">
+          <span class="chip-dot"></span>
+          <span>Auto-updates</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tables row: Current + Event side by side -->
+  <div class="table-row">
+    <!-- Current time table -->
+    <div class="card table-card">
+      <div class="card-title">Current Time Board</div>
+      <div class="small-note">Live view of what time it is for everyone right now.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Current Time</th>
+          </tr>
+        </thead>
+        <tbody id="currentBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Event time table -->
+    <div class="card table-card">
+      <div class="card-title">Event Time Board</div>
+      <div class="small-note">Screenshot this table after choosing an event time.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Event Time</th>
+          </tr>
+        </thead>
+        <tbody id="eventBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script>
+    // Members & time zones
+    const members = [
+      { name: "Gesh",   timeZone: "America/Phoenix" },
+      { name: "Fredo",  timeZone: "America/New_York" },
+      { name: "Poppie", timeZone: "Europe/London" },
+      { name: "Bomber", timeZone: "Europe/Berlin" },
+      { name: "Emily",  timeZone: "Australia/Sydney" },
+      // Add more here if needed
+    ];
+
+    const currentBody    = document.getElementById("currentBody");
+    const eventBody      = document.getElementById("eventBody");
+    const localNowEl     = document.getElementById("localNow");
+    const localTzLabel   = document.getElementById("localTzLabel");
+    const localTzPrint   = document.getElementById("localTzPrint");
+    const eventDateTime  = document.getElementById("eventDateTime");
+    const quickButtons   = document.querySelectorAll(".quick-button");
+
+    const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    localTzLabel.textContent = localTimeZone;
+    localTzPrint.textContent = `(${localTimeZone})`;
+
+    function formatInZone(date, timeZone) {
+      if (!date) return "—";
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        timeZone,
+      }).format(date);
+    }
+
+    function formatLocal(date) {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+      }).format(date);
+    }
+
+    // Render Current Time table
+    function renderCurrent() {
+      const now = new Date();
+      localNowEl.textContent = formatLocal(now);
+      currentBody.innerHTML = "";
+
+      members.forEach(m => {
+        currentBody.innerHTML += `
+          <tr>
+            <td class="name-cell">
+              ${m.name}
+              <div class="tz-cell">${m.timeZone}</div>
+            </td>
+            <td>${formatInZone(now, m.timeZone)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // Render Event Time table
+    function renderEvent(eventDate) {
+      eventBody.innerHTML = "";
+
+      members.forEach(m => {
+        eventBody.innerHTML += `
+          <tr>
+            <td class="name-cell">
+              ${m.name}
+              <div class="tz-cell">${m.timeZone}</div>
+            </td>
+            <td>${eventDate ? formatInZone(eventDate, m.timeZone) : "Pick a date/time"}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // Flatpickr date+time picker
+    const fp = flatpickr(eventDateTime, {
+      enableTime: true,
+      time_24hr: false,
+      dateFormat: "Y-m-d H:i", // parseable format
+      defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // +1 day by default
+      onChange: (selectedDates) => {
+        const dt = selectedDates[0] || null;
+        renderEvent(dt);
+      }
+    });
+
+    // Preset buttons (tonight, tomorrow evening, next Saturday)
+    function applyPreset(preset) {
+      const now = new Date();
+      let t = new Date(now);
+
+      if (preset === "tonight") {
+        t.setHours(20, 0, 0, 0); // 8 PM
+        if (t < now) t.setDate(t.getDate() + 1);
+      } else if (preset === "tomorrow-evening") {
+        t.setDate(t.getDate() + 1);
+        t.setHours(19, 0, 0, 0); // 7 PM
+      } else if (preset === "next-sat-afternoon") {
+        const day = t.getDay(); // 0 = Sun
+        const daysUntilSat = (6 - day + 7) % 7 || 7; // at least 1 week ahead
+        t.setDate(t.getDate() + daysUntilSat);
+        t.setHours(14, 0, 0, 0); // 2 PM
+      }
+
+      fp.setDate(t, true); // true = triggers onChange → updates event table
+    }
+
+    quickButtons.forEach(btn =>
+      btn.addEventListener("click", () => applyPreset(btn.dataset.preset))
+    );
+
+    // Initial render
+    const initialEvent = fp.selectedDates[0] || null;
+    renderCurrent();
+    renderEvent(initialEvent);
+
+    // Update the current-time table every 15 seconds
+    setInterval(renderCurrent, 15000);
+  </script>
+</body>
+</html>
