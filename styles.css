@@ -1,0 +1,188 @@
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #111827;
+  color: #e5e7eb;
+  margin: 0;
+  padding: 1.5rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: #9ca3af;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.card {
+  background: #111827;
+  border-radius: 0.75rem;
+  border: 1px solid #1f2937;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #e5e7eb;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #d1d5db;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+input,
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+input {
+  background: #020617;
+  color: #e5e7eb;
+  border-radius: 0.5rem;
+  border: 1px solid #374151;
+  padding: 0.4rem 0.5rem;
+  width: 100%;
+  max-width: 260px;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px #60a5fa44;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.control-group {
+  min-width: 220px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid #1f2937;
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  background: #020617;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tbody tr:nth-child(even) {
+  background: #020617;
+}
+
+.name-cell {
+  font-weight: 600;
+}
+
+.tz-cell {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.small-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+
+.highlight {
+  color: #a5b4fc;
+  font-weight: 500;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #374151;
+  background: #020617;
+  color: #e5e7eb;
+  margin-top: 0.25rem;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.quick-button {
+  border-radius: 999px;
+  border: 1px solid #4b5563;
+  background: #020617;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #e5e7eb;
+}
+
+.quick-button:hover {
+  border-color: #60a5fa;
+  background: #111827;
+}
+
+/* Layout for the two tables side by side */
+.table-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Each table card shares the row space */
+.table-card {
+  flex: 1 1 450px;   /* Grow, shrink, min ~450px */
+  min-width: 320px;  /* Prevent super tiny tables on narrow windows */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make tables stretch to fill card height for balanced look */
+.table-card table {
+  flex-grow: 1;
+}
