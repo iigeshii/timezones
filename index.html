@@ -34,13 +34,13 @@
 
         <div class="quick-buttons">
           <button type="button" class="quick-button" data-preset="tonight">
-            Tonight 8:00 PM
+            Tonight 20:00
           </button>
           <button type="button" class="quick-button" data-preset="tomorrow-evening">
-            Tomorrow 7:00 PM
+            Tomorrow 19:00
           </button>
           <button type="button" class="quick-button" data-preset="next-sat-afternoon">
-            Next Saturday 2:00 PM
+            Next Saturday 14:00
           </button>
         </div>
 
@@ -101,21 +101,21 @@
   <script>
     // ===== Members & time zones =====
     const members = [
-      { name: "Universal (UTC)", timeZone: "UTC" },              // Reference row
+      { name: "Universal (UTC)",                    timeZone: "UTC" },
 
-      { name: "GeshGiezel",      timeZone: "America/Phoenix" },
-      { name: "The Auld Witch / Poppie",          timeZone: "Europe/London" },
-      { name: "Fredo / Bomberbird248",   timeZone: "Europe/Berlin" },
-      { name: "Skullman",        timeZone: "Europe/London" },
-      { name: "Kaiusz / KVG89",           timeZone: "Europe/Amsterdam" },
-      { name: "The Primeval Queen / vampireXgoth",    timeZone: "America/Chicago" },
-      { name: "Cloud / DiabolicalCloud", timeZone: "America/Regina" },
-      { name: "Emsi1y2255",      timeZone: "America/Chicago" },
-      { name: "Kitty / porcelaingamer8", timeZone: "America/New_York" },
-      { name: "CALIFER25",       timeZone: "Asia/Singapore" },
-      { name: "Hitesh2550",      timeZone: "Asia/Kolkata" },
-      { name: "Tala / Aikois",                       timeZone: "Asia/Manila" },
-      { name: "Flameboi789 / Flame7484",             timeZone: "America/Los_Angeles" },
+      { name: "GeshGiezel",                         timeZone: "America/Phoenix" },
+      { name: "The Auld Witch / Poppie",            timeZone: "Europe/London" },
+      { name: "Fredo / Bomberbird248",              timeZone: "Europe/Berlin" },
+      { name: "Skullman",                           timeZone: "Europe/London" },
+      { name: "Kaiusz / KVG89",                     timeZone: "Europe/Amsterdam" },
+      { name: "The Primeval Queen / vampireXgoth",  timeZone: "America/Chicago" },
+      { name: "Cloud / DiabolicalCloud",            timeZone: "America/Regina" },
+      { name: "Emsi1y2255",                         timeZone: "America/Chicago" },
+      { name: "Kitty / porcelaingamer8",            timeZone: "America/New_York" },
+      { name: "CALIFER / CALIFER25",                timeZone: "Asia/Singapore" },
+      { name: "Hitesh / Hitesh2550",                timeZone: "Asia/Kolkata" },
+      { name: "Tala / Aikois",                      timeZone: "Asia/Manila" },
+      { name: "Flameboi789 / Flame7484",            timeZone: "America/Los_Angeles" },
     ];
 
     const currentBody    = document.getElementById("currentBody");
@@ -130,34 +130,39 @@
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
 
-    // Format a date in a target zone (with seconds)
-    function formatInZone(date, timeZone) {
+    // ===== Time formatting helpers =====
+
+    // Returns:
+    // "Fri, Nov 29, 17:09:46<br>(5:09:46 PM)"
+    function dualFormat(date, timeZone) {
       if (!date) return "—";
-      return new Intl.DateTimeFormat("en-US", {
+
+      const f24 = new Intl.DateTimeFormat("en-US", {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
+        hour12: false,
         weekday: "short",
         month: "short",
         day: "2-digit",
         timeZone,
       }).format(date);
-    }
 
-    // Format local "now" display
-    function formatLocal(date) {
-      return new Intl.DateTimeFormat("en-US", {
+      const f12 = new Intl.DateTimeFormat("en-US", {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-        weekday: "short",
-        month: "short",
-        day: "2-digit",
+        hour12: true,
+        timeZone,
       }).format(date);
+
+      // Two-line output using <br>
+      return `${f24}<br><span class="twelve-hour">${f12}</span>`;
     }
 
+
     // Timezone label formatter:
-    // "(MST / GMT-7)", "(IST / GMT+05:30)", "(GMT+8)" if abbrev == offset
+    // "(MST / GMT-7)", "(IST / GMT+05:30)", or "(GMT+8)" if abbrev == offset
     function getZoneLabel(timeZone) {
       const now = new Date();
 
@@ -183,13 +188,15 @@
       const preferredAbbr = {
         "Europe/Berlin":      "CET",
         "Europe/Amsterdam":   "CET",
-        "Europe/London":      "GMT",  // will still show BST if browser decides
+        "Europe/London":      "GMT",
         "Asia/Singapore":     "SGT",
         "America/Phoenix":    "MST",
         "America/Chicago":    "CST",
         "America/New_York":   "EST",
         "America/Regina":     "CST",
         "Asia/Kolkata":       "IST",
+        "Asia/Manila":        "PHT",
+        "America/Los_Angeles":"PST",
         "UTC":                "UTC",
       };
 
@@ -222,7 +229,7 @@
     // ===== Render Current Time table + "Now (your local)" =====
     function renderCurrent() {
       const now = new Date();
-      localNowEl.textContent = formatLocal(now);
+      localNowEl.textContent = dualFormat(now, localTimeZone);
 
       const sorted = sortMembersByLocalTime(now);
       currentBody.innerHTML = "";
@@ -236,7 +243,7 @@
               ${m.name}
               <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
-            <td>${formatInZone(now, m.timeZone)}</td>
+            <td>${dualFormat(now, m.timeZone)}</td>
           </tr>
         `;
       });
@@ -272,7 +279,7 @@
               ${m.name}
               <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
-            <td>${formatInZone(eventDate, m.timeZone)}</td>
+            <td>${dualFormat(eventDate, m.timeZone)}</td>
           </tr>
         `;
       });
@@ -281,7 +288,7 @@
     // ===== Flatpickr date+time picker =====
     const fp = flatpickr(eventDateTime, {
       enableTime: true,
-      time_24hr: false,
+      time_24hr: false, // users pick in 12h picker, display is dual-format anyway
       dateFormat: "Y-m-d H:i",
       defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // +1 day
       onChange: (selectedDates) => {
