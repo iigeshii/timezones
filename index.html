@@ -290,23 +290,16 @@
 
     // ===== Render Event Time board =====
     function renderEventBoard() {
-      // Update column headers with UTC display
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        const headerEl = document.getElementById(`optionHeader${i + 1}`);
-        const opt = eventOptions[i];
-
-        let label = `Option ${i + 1}`;
-        if (opt.utcDate) {
-          const utcDisplay = dualFormat(opt.utcDate, "UTC");
-          label += `<br><span class="twelve-hour">UTC: ${utcDisplay}</span>`;
-        }
-
-        headerEl.innerHTML = label;
-      }
-
       eventBody.innerHTML = "";
 
-      // Match row order with Current Time Board
+      // Stats per option: how many good/okay/bad slots there are
+      const optionStats = Array.from({ length: EVENT_OPTION_COUNT }, () => ({
+        good: 0,
+        okay: 0,
+        bad: 0,
+      }));
+
+      // Match row order with Current Time Board (by current local time)
       const now = new Date();
       const sortedMembers = sortMembersByLocalTime(now);
 
@@ -324,18 +317,49 @@
         for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
           const opt = eventOptions[i];
           let cellContent = "Pick a date/time";
+          let cellClass = "";
 
           if (opt.utcDate) {
+            const hour = getLocalHourForUtcDate(opt.utcDate, m.timeZone);
+            const slotClass = getSlotClassForHour(hour);
+            cellClass = slotClass;
+
+            // track stats
+            if (slotClass === "slot-good") optionStats[i].good++;
+            else if (slotClass === "slot-okay") optionStats[i].okay++;
+            else if (slotClass === "slot-bad") optionStats[i].bad++;
+
             cellContent = dualFormat(opt.utcDate, m.timeZone);
           }
 
-          row += `<td>${cellContent}</td>`;
+          row += `<td class="${cellClass}">${cellContent}</td>`;
         }
 
         row += `</tr>`;
         eventBody.innerHTML += row;
       });
+
+      // Update column headers with UTC time + stats
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const headerEl = document.getElementById(`optionHeader${i + 1}`);
+        const opt = eventOptions[i];
+
+        let label = `Option ${i + 1}`;
+        if (opt.utcDate) {
+          const utcDisplay = dualFormat(opt.utcDate, "UTC");
+          const stats = optionStats[i];
+          label += `
+            <br><span class="twelve-hour">UTC: ${utcDisplay}</span>
+            <br><span class="option-stats">
+              G: ${stats.good} · O: ${stats.okay} · R: ${stats.bad}
+            </span>
+          `;
+        }
+
+        headerEl.innerHTML = label;
+      }
     }
+
 
     // ===== Setup Flatpickr for four UTC options =====
     function setupEventInputs() {
@@ -354,6 +378,28 @@
         });
       }
     }
+
+    // Get local hour (0–23) for a UTC date in a given time zone
+    function getLocalHourForUtcDate(utcDate, timeZone) {
+      const zoned = new Date(utcDate.toLocaleString("en-US", { timeZone }));
+      return zoned.getHours(); // 0–23 local time
+    }
+
+    // Classify hour as good/okay/bad
+    function classifyHour(hour) {
+      // adjust these ranges however you like!
+      if (hour >= 9 && hour < 22) return "good";          // 09:00–21:59
+      if ((hour >= 7 && hour < 9) || (hour >= 22 && hour < 24)) return "okay";
+      return "bad";                                       // 23:00–06:59
+    }
+
+    function getSlotClassForHour(hour) {
+      const cls = classifyHour(hour);
+      if (cls === "good") return "slot-good";
+      if (cls === "okay") return "slot-okay";
+      return "slot-bad";
+    }
+
 
     // ===== Initial setup & loops =====
     setupEventInputs();
