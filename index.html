@@ -99,13 +99,21 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
   <script>
-    // Members & time zones
+    // ===== Members & time zones =====
     const members = [
-      { name: "Gesh",   timeZone: "America/Phoenix" },
-      { name: "Fredo",  timeZone: "America/New_York" },
-      { name: "Poppie", timeZone: "Europe/London" },
-      { name: "Bomber", timeZone: "Europe/Berlin" },
-      { name: "Emily",  timeZone: "Australia/Sydney" },
+      { name: "Universal (UTC)", timeZone: "UTC" },              // Reference row
+
+      { name: "GeshGiezel",      timeZone: "America/Phoenix" },
+      { name: "Poppie",          timeZone: "Europe/London" },
+      { name: "Bomberbird248",   timeZone: "Europe/Berlin" },
+      { name: "Skullman",        timeZone: "Europe/London" },
+      { name: "KVG89",           timeZone: "Europe/Amsterdam" },
+      { name: "vampireXgoth",    timeZone: "America/Chicago" },
+      { name: "DiabolicalCloud", timeZone: "America/Regina" },
+      { name: "Emsi1y2255",      timeZone: "America/Chicago" },
+      { name: "porcelaingamer8", timeZone: "America/New_York" },
+      { name: "CALIFER25",       timeZone: "Asia/Singapore" },
+      { name: "Hitesh2550",      timeZone: "Asia/Kolkata" },
     ];
 
     const currentBody    = document.getElementById("currentBody");
@@ -120,11 +128,13 @@
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
 
+    // Format a date in a target zone (with seconds)
     function formatInZone(date, timeZone) {
       if (!date) return "—";
       return new Intl.DateTimeFormat("en-US", {
         hour: "2-digit",
         minute: "2-digit",
+        second: "2-digit",
         weekday: "short",
         month: "short",
         day: "2-digit",
@@ -132,6 +142,7 @@
       }).format(date);
     }
 
+    // Format local "now" display
     function formatLocal(date) {
       return new Intl.DateTimeFormat("en-US", {
         hour: "2-digit",
@@ -143,18 +154,85 @@
       }).format(date);
     }
 
-    // Render Current Time table
+    // Timezone label formatter:
+    // "(MST / GMT-7)", "(IST / GMT+05:30)", "(GMT+8)" if abbrev == offset
+    function getZoneLabel(timeZone) {
+      const now = new Date();
+
+      const partsShort = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).formatToParts(now);
+
+      const partsOffset = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "shortOffset",
+      }).formatToParts(now);
+
+      let abbr = partsShort.find(p => p.type === "timeZoneName")?.value || "";
+      let offset = partsOffset.find(p => p.type === "timeZoneName")?.value || "";
+
+      offset = offset.replace("UTC", "GMT");
+
+      const preferredAbbr = {
+        "Europe/Berlin":      "CET",
+        "Europe/Amsterdam":   "CET",
+        "Europe/London":      "GMT",  // will still show BST if browser decides
+        "Asia/Singapore":     "SGT",
+        "America/Phoenix":    "MST",
+        "America/Chicago":    "CST",
+        "America/New_York":   "EST",
+        "America/Regina":     "CST",
+        "Asia/Kolkata":       "IST",
+        "UTC":                "UTC",
+      };
+
+      if ((abbr === offset || abbr === "") && preferredAbbr[timeZone]) {
+        abbr = preferredAbbr[timeZone];
+      }
+
+      if (abbr === offset || abbr === "") {
+        return `(${offset})`;
+      }
+
+      return `(${abbr} / ${offset})`;
+    }
+
+    // Convert a date into a numeric sortable timestamp in a given zone
+    function getZonedTimestamp(date, timeZone) {
+      const zoned = new Date(date.toLocaleString("en-US", { timeZone }));
+      return zoned.getTime();
+    }
+
+    // Sort members by their local time at a given date (descending)
+    function sortMembersByLocalTime(date) {
+      return [...members].sort((a, b) => {
+        const ta = getZonedTimestamp(date, a.timeZone);
+        const tb = getZonedTimestamp(date, b.timeZone);
+        return tb - ta; // newest (largest) first
+      });
+    }
+
+    // ===== Render Current Time table + "Now (your local)" =====
     function renderCurrent() {
       const now = new Date();
       localNowEl.textContent = formatLocal(now);
+
+      const sorted = sortMembersByLocalTime(now);
       currentBody.innerHTML = "";
 
-      members.forEach(m => {
+      sorted.forEach(m => {
+        const label = getZoneLabel(m.timeZone);
+
         currentBody.innerHTML += `
-          <tr>
+          <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
             <td class="name-cell">
               ${m.name}
-              <div class="tz-cell">${m.timeZone}</div>
+              <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
             <td>${formatInZone(now, m.timeZone)}</td>
           </tr>
@@ -162,65 +240,86 @@
       });
     }
 
-    // Render Event Time table
+    // ===== Render Event Time table =====
     function renderEvent(eventDate) {
       eventBody.innerHTML = "";
 
-      members.forEach(m => {
+      if (!eventDate) {
+        members.forEach(m => {
+          const label = getZoneLabel(m.timeZone);
+          eventBody.innerHTML += `
+            <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
+              <td class="name-cell">
+                ${m.name}
+                <div class="tz-cell">${m.timeZone} ${label}</div>
+              </td>
+              <td>Pick a date/time</td>
+            </tr>
+          `;
+        });
+        return;
+      }
+
+      const sorted = sortMembersByLocalTime(eventDate);
+
+      sorted.forEach(m => {
+        const label = getZoneLabel(m.timeZone);
         eventBody.innerHTML += `
-          <tr>
+          <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
             <td class="name-cell">
               ${m.name}
-              <div class="tz-cell">${m.timeZone}</div>
+              <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
-            <td>${eventDate ? formatInZone(eventDate, m.timeZone) : "Pick a date/time"}</td>
+            <td>${formatInZone(eventDate, m.timeZone)}</td>
           </tr>
         `;
       });
     }
 
-    // Flatpickr date+time picker
+    // ===== Flatpickr date+time picker =====
     const fp = flatpickr(eventDateTime, {
       enableTime: true,
       time_24hr: false,
       dateFormat: "Y-m-d H:i",
-      defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      defaultDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // +1 day
       onChange: (selectedDates) => {
         const dt = selectedDates[0] || null;
         renderEvent(dt);
       }
     });
 
-    // Preset buttons
+    // ===== Preset buttons =====
     function applyPreset(preset) {
       const now = new Date();
       let t = new Date(now);
 
       if (preset === "tonight") {
-        t.setHours(20, 0, 0, 0); // 8 PM today
+        t.setHours(20, 0, 0, 0);
         if (t < now) t.setDate(t.getDate() + 1);
       } else if (preset === "tomorrow-evening") {
         t.setDate(t.getDate() + 1);
-        t.setHours(19, 0, 0, 0); // 7 PM tomorrow
+        t.setHours(19, 0, 0, 0);
       } else if (preset === "next-sat-afternoon") {
         const day = t.getDay(); // 0 = Sun
         const daysUntilSat = (6 - day + 7) % 7 || 7;
         t.setDate(t.getDate() + daysUntilSat);
-        t.setHours(14, 0, 0, 0); // 2 PM
+        t.setHours(14, 0, 0, 0);
       }
 
-      fp.setDate(t, true);
+      fp.setDate(t, true); // triggers onChange => renderEvent
     }
 
     quickButtons.forEach(btn =>
       btn.addEventListener("click", () => applyPreset(btn.dataset.preset))
     );
 
-    // Initial render
+    // ===== Initial render =====
     const initialEvent = fp.selectedDates[0] || null;
     renderCurrent();
     renderEvent(initialEvent);
-    setInterval(renderCurrent, 15000);
+
+    // Live auto-update for current time table (every second)
+    setInterval(renderCurrent, 1000);
   </script>
 </body>
 </html>

@@ -167,15 +167,14 @@ tbody tr:nth-child(even) {
 
 /* === TWO-COLUMN TABLE LAYOUT === */
 
-/* On wider screens, put the two cards side by side */
 .table-row {
   display: flex;
   gap: 1rem;
   align-items: stretch;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
-/* Each table card shares the row */
 .table-card {
   flex: 1 1 0;
   box-sizing: border-box;
@@ -183,12 +182,11 @@ tbody tr:nth-child(even) {
   flex-direction: column;
 }
 
-/* Make tables naturally fill card height */
 .table-card table {
   flex-grow: 1;
 }
 
-/* On small screens (phones/tablets), stack them vertically */
+/* Stack on smaller screens */
 @media (max-width: 900px) {
   .table-row {
     flex-direction: column;
@@ -197,4 +195,16 @@ tbody tr:nth-child(even) {
   .table-card {
     width: 100%;
   }
+}
+
+/* === UTC special row styling (Option B: soft blue highlight) === */
+
+.utc-row {
+  background-color: #e8f4ff !important;
+  color: #003f7d !important;
+  font-weight: 600;
+}
+
+.utc-row .tz-cell {
+  color: #003f7d !important;
 }
