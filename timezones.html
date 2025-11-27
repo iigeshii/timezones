@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minecraft Group Time Zones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #9ca3af;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .card {
+      background: #111827;
+      border-radius: 0.75rem;
+      border: 1px solid #1f2937;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+    label {
+      font-size: 0.9rem;
+      color: #d1d5db;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    input, select {
+      background: #020617;
+      color: #e5e7eb;
+      border-radius: 0.5rem;
+      border: 1px solid #374151;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.9rem;
+      width: 100%;
+      max-width: 260px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 1px #60a5fa44;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+    .control-group {
+      min-width: 220px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+    }
+    th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      background: #020617;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) {
+      background: #020617;
+    }
+    .name-cell {
+      font-weight: 600;
+    }
+    .tz-cell {
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
+    .small-note {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 0.25rem;
+    }
+    .highlight {
+      color: #a5b4fc;
+      font-weight: 500;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border-radius: 999px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      margin-top: 0.25rem;
+    }
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+  </style>
+</head>
+<body>
+  <h1>Minecraft Group Time Zone Board</h1>
+  <div class="subtitle">
+    See everyone’s current time and how a chosen event time looks for each member.
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <div class="control-group">
+        <label for="eventTime">
+          Event time (your local time)
+        </label>
+        <input id="eventTime" type="datetime-local" />
+        <div class="small-note">
+          Pick a time to see what it is for everyone else.
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Now (your local):</label>
+        <div id="localNow" class="highlight"></div>
+        <div class="chip">
+          <span class="chip-dot"></span>
+          <span>Auto-updates</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Current Time</th>
+          <th>Time for Selected Event</th>
+        </tr>
+      </thead>
+      <tbody id="memberBody">
+        <!-- Filled by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // 1) EDIT THIS LIST FOR YOUR GROUP
+    // Use IANA time zones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    const members = [
+      { name: "Eric", timeZone: "America/Phoenix" },
+      { name: "Fredo", timeZone: "America/New_York" },
+      { name: "Poppie", timeZone: "Europe/London" },
+      { name: "Bomber", timeZone: "Europe/Berlin" },
+      { name: "Emily", timeZone: "Australia/Sydney" },
+      // Add/remove as needed:
+      // { name: "PlayerName", timeZone: "Continent/City" },
+    ];
+
+    const memberBody = document.getElementById("memberBody");
+    const eventTimeInput = document.getElementById("eventTime");
+    const localNowEl = document.getElementById("localNow");
+
+    // Helpers
+    function formatInZone(date, timeZone) {
+      if (!date) return "—";
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        timeZone,
+      }).format(date);
+    }
+
+    function formatLocal(date) {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+      }).format(date);
+    }
+
+    // Parse yyyy-MM-ddTHH:mm from datetime-local as local time
+    function parseLocalDateTime(value) {
+      if (!value) return null;
+      const [datePart, timePart] = value.split("T");
+      if (!datePart || !timePart) return null;
+
+      const [year, month, day] = datePart.split("-").map(Number);
+      const [hour, minute] = timePart.split(":").map(Number);
+      return new Date(year, month - 1, day, hour, minute);
+    }
+
+    // Render table rows
+    function renderTable() {
+      const eventDate = parseLocalDateTime(eventTimeInput.value);
+      memberBody.innerHTML = "";
+
+      members.forEach((m) => {
+        const tr = document.createElement("tr");
+
+        const nameTd = document.createElement("td");
+        nameTd.className = "name-cell";
+        nameTd.innerHTML =
+          m.name + `<div class="tz-cell">${m.timeZone}</div>`;
+
+        const currentTd = document.createElement("td");
+        currentTd.textContent = formatInZone(new Date(), m.timeZone);
+
+        const eventTd = document.createElement("td");
+        eventTd.textContent = eventDate
+          ? formatInZone(eventDate, m.timeZone)
+          : "Pick an event time above";
+
+        tr.appendChild(nameTd);
+        tr.appendChild(currentTd);
+        tr.appendChild(eventTd);
+        memberBody.appendChild(tr);
+      });
+    }
+
+    // Update just the "current time" and local now without recreating rows
+    function tickCurrentTimes() {
+      const now = new Date();
+      localNowEl.textContent = formatLocal(now);
+
+      // Re-render only the current-time column for each member
+      const rows = memberBody.querySelectorAll("tr");
+      rows.forEach((row, index) => {
+        const m = members[index];
+        const currentTd = row.children[1];
+        currentTd.textContent = formatInZone(now, m.timeZone);
+      });
+    }
+
+    // Set default event time to 24 hours from now (optional)
+    (function initDefaultEventTime() {
+      const now = new Date();
+      const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      const yyyy = in24h.getFullYear();
+      const mm = String(in24h.getMonth() + 1).padStart(2, "0");
+      const dd = String(in24h.getDate()).padStart(2, "0");
+      const hh = String(in24h.getHours()).padStart(2, "0");
+      const min = String(in24h.getMinutes()).padStart(2, "0");
+
+      eventTimeInput.value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    })();
+
+    // Initial render
+    renderTable();
+    tickCurrentTimes();
+
+    // Event: user changes event time
+    eventTimeInput.addEventListener("change", () => {
+      renderTable();
+    });
+
+    // Refresh current times every 15 seconds
+    setInterval(tickCurrentTimes, 15000);
+  </script>
+</body>
+</html>
