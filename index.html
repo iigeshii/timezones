@@ -165,7 +165,6 @@
     // ===== Time formatting helpers =====
 
     // Dual-format on two lines:
-    // "Fri, Nov 29, 17:09:46<br><span class='twelve-hour'>5:09:46 PM</span>"
     function dualFormat(date, timeZone) {
       if (!date) return "—";
 
@@ -309,7 +308,11 @@
 
       eventBody.innerHTML = "";
 
-      members.forEach(m => {
+      // 🔹 Use the SAME sort order as Current Time Board
+      const now = new Date();
+      const sortedMembers = sortMembersByLocalTime(now);
+
+      sortedMembers.forEach(m => {
         const label = getZoneLabel(m.timeZone);
 
         let row = `
