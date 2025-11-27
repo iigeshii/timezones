@@ -165,24 +165,36 @@ tbody tr:nth-child(even) {
   background: #111827;
 }
 
-/* Layout for the two tables side by side */
+/* === TWO-COLUMN TABLE LAYOUT === */
+
+/* On wider screens, put the two cards side by side */
 .table-row {
   display: flex;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
-  flex-wrap: wrap;
 }
 
-/* Each table card shares the row space */
+/* Each table card shares the row */
 .table-card {
-  flex: 1 1 450px;   /* Grow, shrink, min ~450px */
-  min-width: 320px;  /* Prevent super tiny tables on narrow windows */
+  flex: 1 1 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
 
-/* Make tables stretch to fill card height for balanced look */
+/* Make tables naturally fill card height */
 .table-card table {
   flex-grow: 1;
+}
+
+/* On small screens (phones/tablets), stack them vertically */
+@media (max-width: 900px) {
+  .table-row {
+    flex-direction: column;
+  }
+
+  .table-card {
+    width: 100%;
+  }
 }
