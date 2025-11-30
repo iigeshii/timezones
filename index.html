@@ -54,69 +54,74 @@
     </table>
   </div>
 
-  <!-- Event planner controls -->
+  <!-- Toggle Button -->
   <div class="card">
-    <div class="control-group">
-      <label>Event Time Board Title</label>
-      <input
-        id="eventBoardTitle"
-        type="text"
-        placeholder="Event Time Board (click to rename)"
-        style="margin-bottom: 0.75rem; width: 100%; padding: 6px;"
-      />
-
-      <label>Event options (times in UTC)</label>
-      <div class="small-note">
-        Set up to four UTC event times. The Event Time Board converts them to each member’s local time.
-      </div>
-
-      <!-- Option 1 -->
-      <div class="small-note" style="margin-top:0.5rem;">Option 1 (UTC)</div>
-      <input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-      <!-- Option 2 -->
-      <div class="small-note" style="margin-top:0.7rem;">Option 2 (UTC)</div>
-      <input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-      <!-- Option 3 -->
-      <div class="small-note" style="margin-top:0.7rem;">Option 3 (UTC)</div>
-      <input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-      <!-- Option 4 -->
-      <div class="small-note" style="margin-top:0.7rem;">Option 4 (UTC)</div>
-      <input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" />
-
-      <div class="small-note" style="margin-top:0.7rem;">
-        All event times above are treated as UTC. The board below shows each member’s local time.
-      </div>
-    </div>
+    <button id="toggleEventPlanner" class="toggle-btn">Show Event Planner</button>
   </div>
 
-  <!-- Event time table -->
-  <div class="card table-card">
-    <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Member</th>
-          <th id="optionHeader1">Option 1</th>
-          <th id="optionHeader2">Option 2</th>
-          <th id="optionHeader3">Option 3</th>
-          <th id="optionHeader4">Option 4</th>
-        </tr>
-      </thead>
-      <tbody id="eventBody"></tbody>
-    </table>
+  <!-- Event planner wrapper (initially hidden) -->
+  <div id="eventPlannerWrapper" style="display: none;">
+
+    <!-- Event planner controls -->
+    <div class="card">
+      <div class="control-group">
+        <label>Event Time Board Title</label>
+        <input
+          id="eventBoardTitle"
+          type="text"
+          placeholder="Event Time Board (click to rename)"
+          style="margin-bottom: 0.75rem; width: 100%; padding: 6px;"
+        />
+
+        <label>Event options (times in UTC)</label>
+        <div class="small-note">
+          Set up to four UTC event times. The Event Time Board converts them to each member’s local time.
+        </div>
+
+        <div class="small-note" style="margin-top:0.5rem;">Option 1 (UTC)</div>
+        <input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <div class="small-note" style="margin-top:0.7rem;">Option 2 (UTC)</div>
+        <input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <div class="small-note" style="margin-top:0.7rem;">Option 3 (UTC)</div>
+        <input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <div class="small-note" style="margin-top:0.7rem;">Option 4 (UTC)</div>
+        <input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" />
+
+        <div class="small-note" style="margin-top:0.7rem;">
+          All event times above are treated as UTC. The board below shows each member’s local time.
+        </div>
+      </div>
+    </div>
+
+    <!-- Event time table -->
+    <div class="card table-card">
+      <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th id="optionHeader1">Option 1</th>
+            <th id="optionHeader2">Option 2</th>
+            <th id="optionHeader3">Option 3</th>
+            <th id="optionHeader4">Option 4</th>
+          </tr>
+        </thead>
+        <tbody id="eventBody"></tbody>
+      </table>
+    </div>
+
   </div>
 
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+  <!-- Main Script -->
   <script>
-    // ===== Members & time zones (single source of truth) =====
     const members = [
       { name: "Universal (UTC)",                    timeZone: "UTC" },
-
       { name: "GeshGiezel",                         timeZone: "America/Phoenix" },
       { name: "The Auld Witch / Poppie",            timeZone: "Europe/London" },
       { name: "Fredo / Bomberbird248",              timeZone: "Europe/Berlin" },
@@ -133,77 +138,51 @@
     ];
 
     const EVENT_OPTION_COUNT = 4;
-    const eventOptions = [
-      { utcDate: null },
-      { utcDate: null },
-      { utcDate: null },
-      { utcDate: null },
-    ];
+    const eventOptions = Array.from({ length: EVENT_OPTION_COUNT }, () => ({ utcDate: null }));
 
-    // DOM refs
-    const currentBody    = document.getElementById("currentBody");
-    const eventBody      = document.getElementById("eventBody");
-    const localNowEl     = document.getElementById("localNow");
-    const localTzPrint   = document.getElementById("localTzPrint");
-    const localTzLabel   = document.getElementById("localTzLabel");
+    const currentBody = document.getElementById("currentBody");
+    const eventBody = document.getElementById("eventBody");
+    const localNowEl = document.getElementById("localNow");
+    const localTzPrint = document.getElementById("localTzPrint");
+    const localTzLabel = document.getElementById("localTzLabel");
 
-    const eventBoardTitleInput   = document.getElementById("eventBoardTitle");
+    const eventBoardTitleInput = document.getElementById("eventBoardTitle");
     const eventBoardTitleDisplay = document.getElementById("eventBoardTitleDisplay");
 
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
 
-    // Title live update
     eventBoardTitleInput.addEventListener("input", () => {
       const text = eventBoardTitleInput.value.trim();
       eventBoardTitleDisplay.textContent = text || "Event Time Board";
+      updateURLParams();
     });
 
-    // ===== Time helpers =====
-
-    // Two-line time: 24h then 12h (no parentheses)
     function dualFormat(date, timeZone) {
       if (!date) return "—";
 
       const f24 = new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-        weekday: "short",
-        month: "short",
-        day: "2-digit",
-        timeZone,
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false, weekday: "short", month: "short", day: "2-digit", timeZone,
       }).format(date);
 
       const f12 = new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-        timeZone,
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: true, timeZone,
       }).format(date);
 
       return `${f24}<br><span class="twelve-hour">${f12}</span>`;
     }
 
-    // Timezone label, e.g. "(MST / GMT-7)" or "(GMT+8)"
     function getZoneLabel(timeZone) {
       const now = new Date();
-
       const partsShort = new Intl.DateTimeFormat("en-US", {
-        timeZone,
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZoneName: "short",
+        timeZone, hour: "2-digit", minute: "2-digit", timeZoneName: "short",
       }).formatToParts(now);
 
       const partsOffset = new Intl.DateTimeFormat("en-US", {
-        timeZone,
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZoneName: "shortOffset",
+        timeZone, hour: "2-digit", minute: "2-digit", timeZoneName: "shortOffset",
       }).formatToParts(now);
 
       let abbr = partsShort.find(p => p.type === "timeZoneName")?.value || "";
@@ -212,70 +191,41 @@
       offset = offset.replace("UTC", "GMT");
 
       const preferredAbbr = {
-        "Europe/Berlin":       "CET",
-        "Europe/Amsterdam":    "CET",
-        "Europe/London":       "GMT",
-        "Asia/Singapore":      "SGT",
-        "America/Phoenix":     "MST",
-        "America/Chicago":     "CST",
-        "America/New_York":    "EST",
-        "America/Regina":      "CST",
-        "Asia/Kolkata":        "IST",
-        "Asia/Manila":         "PHT",
-        "America/Los_Angeles": "PST",
-        "UTC":                 "UTC",
+        "Europe/Berlin": "CET", "Europe/Amsterdam": "CET", "Europe/London": "GMT",
+        "Asia/Singapore": "SGT", "America/Phoenix": "MST", "America/Chicago": "CST",
+        "America/New_York": "EST", "America/Regina": "CST", "Asia/Kolkata": "IST",
+        "Asia/Manila": "PHT", "America/Los_Angeles": "PST", "UTC": "UTC",
       };
 
       if ((abbr === offset || abbr === "") && preferredAbbr[timeZone]) {
         abbr = preferredAbbr[timeZone];
       }
 
-      if (abbr === offset || abbr === "") {
-        return `(${offset})`;
-      }
-
-      return `(${abbr} / ${offset})`;
+      return (abbr === offset || abbr === "") ? `(${offset})` : `(${abbr} / ${offset})`;
     }
 
-    // Zoned timestamp for sorting
     function getZonedTimestamp(date, timeZone) {
       const zoned = new Date(date.toLocaleString("en-US", { timeZone }));
       return zoned.getTime();
     }
 
     function sortMembersByLocalTime(date) {
-      return [...members].sort((a, b) => {
-        const ta = getZonedTimestamp(date, a.timeZone);
-        const tb = getZonedTimestamp(date, b.timeZone);
-        return tb - ta; // newest first
-      });
+      return [...members].sort((a, b) => getZonedTimestamp(date, b.timeZone) - getZonedTimestamp(date, a.timeZone));
     }
 
-    // Interpret flatpickr selection as UTC clock time
     function localSelectionToUTC(date) {
       if (!date) return null;
-      return new Date(Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        date.getHours(),
-        date.getMinutes(),
-        date.getSeconds(),
-        date.getMilliseconds()
-      ));
+      return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()));
     }
 
-    // ===== Render Current Time board =====
     function renderCurrent() {
       const now = new Date();
       localNowEl.innerHTML = dualFormat(now, localTimeZone);
-
       const sorted = sortMembersByLocalTime(now);
       currentBody.innerHTML = "";
 
       sorted.forEach(m => {
         const label = getZoneLabel(m.timeZone);
-
         currentBody.innerHTML += `
           <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
             <td class="name-cell">
@@ -283,36 +233,24 @@
               <div class="tz-cell">${m.timeZone} ${label}</div>
             </td>
             <td>${dualFormat(now, m.timeZone)}</td>
-          </tr>
-        `;
+          </tr>`;
       });
     }
 
-    // ===== Render Event Time board =====
     function renderEventBoard() {
       eventBody.innerHTML = "";
-
-      // Stats per option: how many good/okay/bad slots there are
-      const optionStats = Array.from({ length: EVENT_OPTION_COUNT }, () => ({
-        good: 0,
-        okay: 0,
-        bad: 0,
-      }));
-
-      // Match row order with Current Time Board (by current local time)
+      const optionStats = Array.from({ length: EVENT_OPTION_COUNT }, () => ({ good: 0, okay: 0, bad: 0 }));
       const now = new Date();
       const sortedMembers = sortMembersByLocalTime(now);
 
       sortedMembers.forEach(m => {
         const label = getZoneLabel(m.timeZone);
-
         let row = `
           <tr class="${m.timeZone === 'UTC' ? 'utc-row' : ''}">
             <td class="name-cell">
               ${m.name}
               <div class="tz-cell">${m.timeZone} ${label}</div>
-            </td>
-        `;
+            </td>`;
 
         for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
           const opt = eventOptions[i];
@@ -324,7 +262,6 @@
             const slotClass = getSlotClassForHour(hour);
             cellClass = slotClass;
 
-            // track stats
             if (slotClass === "slot-good") optionStats[i].good++;
             else if (slotClass === "slot-okay") optionStats[i].okay++;
             else if (slotClass === "slot-bad") optionStats[i].bad++;
@@ -339,11 +276,9 @@
         eventBody.innerHTML += row;
       });
 
-      // Update column headers with UTC time + stats
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const headerEl = document.getElementById(`optionHeader${i + 1}`);
         const opt = eventOptions[i];
-
         let label = `Option ${i + 1}`;
         if (opt.utcDate) {
           const utcDisplay = dualFormat(opt.utcDate, "UTC");
@@ -352,16 +287,12 @@
             <br><span class="twelve-hour">UTC: ${utcDisplay}</span>
             <br><span class="option-stats">
               G: ${stats.good} · O: ${stats.okay} · R: ${stats.bad}
-            </span>
-          `;
+            </span>`;
         }
-
         headerEl.innerHTML = label;
       }
     }
 
-
-    // ===== Setup Flatpickr for four UTC options =====
     function setupEventInputs() {
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const timeInput = document.getElementById(`eventTime${i + 1}`);
@@ -374,23 +305,21 @@
             const localDate = selectedDates[0] || null;
             eventOptions[i].utcDate = localSelectionToUTC(localDate);
             renderEventBoard();
+            updateURLParams();
           }
         });
       }
     }
 
-    // Get local hour (0–23) for a UTC date in a given time zone
     function getLocalHourForUtcDate(utcDate, timeZone) {
       const zoned = new Date(utcDate.toLocaleString("en-US", { timeZone }));
-      return zoned.getHours(); // 0–23 local time
+      return zoned.getHours();
     }
 
-    // Classify hour as good/okay/bad
     function classifyHour(hour) {
-      // adjust these ranges however you like!
-      if (hour >= 9 && hour < 22) return "good";          // 09:00–21:59
+      if (hour >= 9 && hour < 22) return "good";
       if ((hour >= 7 && hour < 9) || (hour >= 22 && hour < 24)) return "okay";
-      return "bad";                                       // 23:00–06:59
+      return "bad";
     }
 
     function getSlotClassForHour(hour) {
@@ -400,13 +329,71 @@
       return "slot-bad";
     }
 
+    function formatDateForInput(date) {
+      const yyyy = date.getUTCFullYear();
+      const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(date.getUTCDate()).padStart(2, '0');
+      const hh = String(date.getUTCHours()).padStart(2, '0');
+      const mi = String(date.getUTCMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
 
-    // ===== Initial setup & loops =====
+    function updateURLParams() {
+      const params = new URLSearchParams();
+      const title = eventBoardTitleInput.value.trim();
+      if (title) params.set("title", title);
+
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const utcDate = eventOptions[i].utcDate;
+        if (utcDate) {
+          params.set(`time${i + 1}`, utcDate.toISOString());
+        }
+      }
+
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      history.replaceState({}, "", newUrl);
+    }
+
+    function loadFromURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const title = params.get("title");
+      if (title) {
+        eventBoardTitleInput.value = title;
+        eventBoardTitleDisplay.textContent = title;
+      }
+
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const isoStr = params.get(`time${i + 1}`);
+        if (isoStr) {
+          const utcDate = new Date(isoStr);
+          if (!isNaN(utcDate)) {
+            eventOptions[i].utcDate = utcDate;
+            document.getElementById(`eventTime${i + 1}`).value = formatDateForInput(utcDate);
+          }
+        }
+      }
+
+      renderEventBoard();
+
+      // Auto-show planner if values exist
+      if (title || params.get("time1")) {
+        document.getElementById("eventPlannerWrapper").style.display = "block";
+        document.getElementById("toggleEventPlanner").textContent = "Hide Event Planner";
+      }
+    }
+
+    document.getElementById("toggleEventPlanner").addEventListener("click", () => {
+      const wrapper = document.getElementById("eventPlannerWrapper");
+      const isHidden = wrapper.style.display === "none";
+      wrapper.style.display = isHidden ? "block" : "none";
+      document.getElementById("toggleEventPlanner").textContent = isHidden ? "Hide Event Planner" : "Show Event Planner";
+    });
+
     setupEventInputs();
     renderCurrent();
     renderEventBoard();
+    loadFromURLParams();
 
-    // Auto-update Current Time Board + local clock every second
     setInterval(renderCurrent, 1000);
   </script>
 </body>
