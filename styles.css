@@ -41,10 +41,7 @@ label {
 }
 
 input,
-button {
-  font-family: inherit;
-  font-size: 0.9rem;
-}
+button { font-family: inherit; font-size: 0.9rem; }
 
 input {
   background: #020617;
@@ -70,9 +67,7 @@ input:focus {
   align-items: flex-start;
 }
 
-.control-group {
-  min-width: 220px;
-}
+.control-group { min-width: 220px; }
 
 table {
   width: 100%;
@@ -81,8 +76,7 @@ table {
   font-size: 0.9rem;
 }
 
-th,
-td {
+th, td {
   padding: 0.5rem 0.6rem;
   text-align: left;
   border-bottom: 1px solid #1f2937;
@@ -99,13 +93,9 @@ th {
   z-index: 1;
 }
 
-tbody tr:nth-child(even) {
-  background: #020617;
-}
+tbody tr:nth-child(even) { background: #020617; }
 
-.name-cell {
-  font-weight: 600;
-}
+.name-cell { font-weight: 600; }
 
 .tz-cell {
   color: #9ca3af;
@@ -165,67 +155,19 @@ tbody tr:nth-child(even) {
   background: #111827;
 }
 
-/* === TWO-COLUMN TABLE LAYOUT === */
-
-.table-row {
-  display: flex;
-  gap: 1rem;
-  align-items: stretch;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.table-card {
-  flex: 1 1 0;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-.table-card table {
-  flex-grow: 1;
-}
-
-/* Stack on smaller screens */
-@media (max-width: 900px) {
-  .table-row {
-    flex-direction: column;
-  }
-
-  .table-card {
-    width: 100%;
-  }
-}
-
 /* === UTC special row styling === */
-
 .utc-row {
   background-color: #e8f4ff !important;
   color: #003f7d !important;
   font-weight: 600;
 }
-
-.utc-row .tz-cell {
-  color: #003f7d !important;
-}
+.utc-row .tz-cell { color: #003f7d !important; }
 
 /* === Slot colors === */
-
-.slot-good {
-  background-color: rgba(34, 197, 94, 0.15);
-}
-
-.slot-okay {
-  background-color: rgba(234, 179, 8, 0.18);
-}
-
-.slot-bad {
-  background-color: rgba(248, 113, 113, 0.20);
-}
-
-.slot-bad .twelve-hour {
-  color: #b91c1c;
-}
+.slot-good { background-color: rgba(34, 197, 94, 0.15); }
+.slot-okay { background-color: rgba(234, 179, 8, 0.18); }
+.slot-bad  { background-color: rgba(248, 113, 113, 0.20); }
+.slot-bad .twelve-hour { color: #b91c1c; }
 
 .option-stats {
   font-size: 0.7rem;
@@ -233,8 +175,6 @@ tbody tr:nth-child(even) {
   display: block;
   margin-top: 2px;
 }
-
-/* === Toggle Button Styling === */
 
 .toggle-btn {
   padding: 0.5rem 1rem;
@@ -248,8 +188,88 @@ tbody tr:nth-child(even) {
   transition: background 0.2s ease, border-color 0.2s ease;
   width: 100%;
 }
+.toggle-btn:hover { background-color: #374151; border-color: #4b5563; }
 
-.toggle-btn:hover {
-  background-color: #374151;
-  border-color: #4b5563;
+/* Clickable option headers */
+.option-header:hover {
+  border-color: #60a5fa;
+  box-shadow: inset 0 -2px 0 0 rgba(96, 165, 250, 0.35);
+}
+.option-header:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
+}
+
+/* Compact poster */
+.poster {
+  background: linear-gradient(180deg, rgba(2,6,23,0.9), rgba(17,24,39,1));
+  border: 1px solid #273244;
+}
+
+.poster-compact { padding: 0.85rem 0.9rem; }
+
+.poster-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.compact-grid {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.35rem 0.45rem;
+}
+
+/* responsive fallback */
+@media (max-width: 820px) {
+  .compact-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.compact-item {
+  border: 1px solid #1f2937;
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.5rem;
+  overflow: hidden;
+}
+
+.compact-utc { border-color: rgba(96, 165, 250, 0.55); }
+
+.compact-name {
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.05rem;
+  margin-bottom: 0.12rem;
+}
+
+.compact-time {
+  font-size: 0.78rem;
+  color: #e5e7eb;
+}
+
+.compact-time .twelve-hour { color: #9ca3af; }
+
+/* --- Ultra-compact Discord poster width --- */
+#announcePosterCompact {
+  max-width: 760px;   /* try 720–820 if you want */
+  margin: 0 auto;     /* center it */
+  padding: 0.6rem 0.7rem;
+}
+
+/* tighten the compact items a touch */
+.compact-item {
+  padding: 0.35rem 0.4rem;
+  border-radius: 0.45rem;
+}
+
+.compact-name {
+  font-size: 0.78rem;
+  line-height: 1rem;
+  margin-bottom: 0.1rem;
+}
+
+.compact-time {
+  font-size: 0.72rem;
 }

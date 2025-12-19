@@ -8,6 +8,9 @@
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
+  <!-- html2canvas (for Announcement image copy/download) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
   <!-- Shared CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -15,7 +18,7 @@
 <body>
   <h1>Crimson Cuckoo Coven Member Time Zone Board</h1>
   <div class="subtitle">
-    Quick reference for everyone’s current time, plus an event options planner below.
+    Quick reference for everyone’s current time, then an Event Planner, then a compact Announcement image.
   </div>
 
   <!-- Local time + quick reference -->
@@ -34,13 +37,13 @@
       </div>
 
       <div class="small-note" style="margin-top:0.75rem;">
-        Scroll down to the Event Planner to compare up to four UTC-based options for everyone.
+        Use the Event Planner to pick up to 4 UTC options. Then click an option header to generate a compact Discord-ready announcement image.
       </div>
     </div>
   </div>
 
   <!-- Current time table -->
-  <div class="card table-card">
+  <div class="card table-card" id="currentBoardCard">
     <div class="card-title">Current Time Board</div>
     <div class="small-note">Live view of what time it is for everyone right now.</div>
     <table>
@@ -55,7 +58,7 @@
   </div>
 
   <!-- Toggle Button -->
-  <div class="card">
+  <div class="card" id="plannerToggleCard">
     <button id="toggleEventPlanner" class="toggle-btn">Show Event Planner</button>
   </div>
 
@@ -103,23 +106,65 @@
         <thead>
           <tr>
             <th>Member</th>
-            <th id="optionHeader1">Option 1</th>
-            <th id="optionHeader2">Option 2</th>
-            <th id="optionHeader3">Option 3</th>
-            <th id="optionHeader4">Option 4</th>
+            <th id="optionHeader1" class="option-header">Option 1</th>
+            <th id="optionHeader2" class="option-header">Option 2</th>
+            <th id="optionHeader3" class="option-header">Option 3</th>
+            <th id="optionHeader4" class="option-header">Option 4</th>
           </tr>
         </thead>
         <tbody id="eventBody"></tbody>
       </table>
+      <div class="small-note" style="margin-top:0.5rem;">
+        Tip: Click an Option header to create the Announcement image for that option.
+      </div>
     </div>
 
+  </div>
+
+  <!-- Announcement card (hidden until you click an option OR use URL params) -->
+  <div id="announceWrapper" class="card" style="display:none;">
+    <div class="card-title" id="announceTitle">Event Announcement</div>
+
+    <div class="controls" style="margin-top:0.75rem;">
+      <div class="control-group">
+        <label>Event time (UTC)</label>
+        <div id="announceUtc" class="highlight"></div>
+      </div>
+
+      <div class="control-group" style="min-width:260px;">
+        <label>Share</label>
+        <div class="quick-buttons">
+          <button id="copyAnnounceImage" class="quick-button">Copy image</button>
+          <button id="downloadAnnounceImage" class="quick-button">Download PNG</button>
+        </div>
+        <div class="small-note">
+          Copy image works best on HTTPS (GitHub Pages). Download works everywhere.
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact poster (this is what gets captured) -->
+    <div id="announcePosterCompact" class="card poster poster-compact">
+      <div class="poster-header">
+        <div>
+          <div class="card-title" id="announcePosterTitleCompact">Event Announcement</div>
+          <div class="small-note" id="announcePosterUtcLineCompact"></div>
+        </div>
+        <div class="chip">
+          <span class="chip-dot"></span>
+          <span>Crimson Cuckoo Coven</span>
+        </div>
+      </div>
+
+      <div class="compact-grid" id="announceGrid"></div>
+    </div>
   </div>
 
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <!-- Main Script -->
   <script>
+    // === MEMBERS ===
     const members = [
       { name: "Universal (UTC)",                    timeZone: "UTC" },
       { name: "GeshGiezel",                         timeZone: "America/Phoenix" },
@@ -127,7 +172,7 @@
       { name: "Fredo / Bomberbird248",              timeZone: "Europe/Berlin" },
       { name: "Skullman",                           timeZone: "Europe/London" },
       { name: "Kaiusz / KVG89",                     timeZone: "Europe/Amsterdam" },
-      //{ name: "The Primeval Queen / vampireXgoth",  timeZone: "America/Chicago" },
+      { name: "The Primeval Queen / vampireXgoth",  timeZone: "America/Chicago" },
       { name: "Cloud / DiabolicalCloud",            timeZone: "America/Regina" },
       { name: "Emsi1y2255",                         timeZone: "America/Chicago" },
       { name: "Kitty / porcelaingamer8",            timeZone: "America/New_York" },
@@ -135,10 +180,11 @@
       { name: "Hitesh / Hitesh2550",                timeZone: "Asia/Kolkata" },
       { name: "Tala / Aikois",                      timeZone: "Asia/Manila" },
       { name: "Flameboi789 / Flame7484",            timeZone: "America/Los_Angeles" },
-      { name: "zet / SvelteAtom2577",               timeZone: "Europe/Berlin" },   // GMT+1
-      { name: "Suwa / Suwa7506",                    timeZone: "Asia/Kolkata" },    // GMT+5:30
-      { name: "Lil Roony / Lil Roony woo",          timeZone: "Asia/Kolkata" },    // GMT+5:30
-      { name: "LadyVonDawn",                        timeZone: "Asia/Manila" },     // GMT+8 (Philippines)
+
+      { name: "zet / SvelteAtom2577",               timeZone: "Europe/Berlin" }, // GMT+1
+      { name: "Suwa / Suwa7506",                    timeZone: "Asia/Kolkata" },  // GMT+5:30
+      { name: "Lil Roony / Lil Roony woo",          timeZone: "Asia/Kolkata" },  // GMT+5:30
+      { name: "LadyVonDawn",                        timeZone: "Asia/Manila" },   // GMT+8
     ];
 
     const EVENT_OPTION_COUNT = 4;
@@ -153,6 +199,14 @@
     const eventBoardTitleInput = document.getElementById("eventBoardTitle");
     const eventBoardTitleDisplay = document.getElementById("eventBoardTitleDisplay");
 
+    const announceWrapper = document.getElementById("announceWrapper");
+    const announceTitleEl = document.getElementById("announceTitle");
+    const announceUtcEl = document.getElementById("announceUtc");
+    const announcePosterEl = document.getElementById("announcePosterCompact");
+    const announceGrid = document.getElementById("announceGrid");
+    const announcePosterTitleCompactEl = document.getElementById("announcePosterTitleCompact");
+    const announcePosterUtcLineCompact = document.getElementById("announcePosterUtcLineCompact");
+
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     localTzLabel.textContent = localTimeZone;
     localTzPrint.textContent = `(${localTimeZone})`;
@@ -165,7 +219,6 @@
 
     function dualFormat(date, timeZone) {
       if (!date) return "—";
-
       const f24 = new Intl.DateTimeFormat("en-US", {
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false, weekday: "short", month: "short", day: "2-digit", timeZone,
@@ -176,6 +229,19 @@
         hour12: true, timeZone,
       }).format(date);
 
+      return `${f24}<br><span class="twelve-hour">${f12}</span>`;
+    }
+
+    function dualFormatNoSeconds(date, timeZone) {
+      if (!date) return "—";
+      const f24 = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit", minute: "2-digit",
+        hour12: false, weekday: "short", month: "short", day: "2-digit", timeZone,
+      }).format(date);
+      const f12 = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit", minute: "2-digit",
+        hour12: true, timeZone,
+      }).format(date);
       return `${f24}<br><span class="twelve-hour">${f12}</span>`;
     }
 
@@ -220,6 +286,24 @@
     function localSelectionToUTC(date) {
       if (!date) return null;
       return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()));
+    }
+
+    function getLocalHourForUtcDate(utcDate, timeZone) {
+      const zoned = new Date(utcDate.toLocaleString("en-US", { timeZone }));
+      return zoned.getHours();
+    }
+
+    function classifyHour(hour) {
+      if (hour >= 9 && hour < 22) return "good";
+      if ((hour >= 7 && hour < 9) || (hour >= 22 && hour < 24)) return "okay";
+      return "bad";
+    }
+
+    function getSlotClassForHour(hour) {
+      const cls = classifyHour(hour);
+      if (cls === "good") return "slot-good";
+      if (cls === "okay") return "slot-okay";
+      return "slot-bad";
     }
 
     function renderCurrent() {
@@ -297,10 +381,102 @@
       }
     }
 
+    function renderAnnouncement(utcDate) {
+      const title = (eventBoardTitleInput.value || getParam("title") || "Event Announcement").trim();
+      announceTitleEl.textContent = title;
+      announcePosterTitleCompactEl.textContent = title;
+
+      const utcPretty = dualFormatNoSeconds(utcDate, "UTC");
+      announceUtcEl.innerHTML = utcPretty;
+      announcePosterUtcLineCompact.innerHTML = `UTC: <span class="highlight">${utcPretty}</span>`;
+
+      announceGrid.innerHTML = "";
+      const now = new Date();
+      const sortedMembers = sortMembersByLocalTime(now);
+
+      sortedMembers.forEach(m => {
+        const hour = getLocalHourForUtcDate(utcDate, m.timeZone);
+        const slotClass = getSlotClassForHour(hour);
+
+        const item = document.createElement("div");
+        item.className = `compact-item ${slotClass}` + (m.timeZone === "UTC" ? " compact-utc" : "");
+        item.innerHTML = `
+          <div class="compact-name">${m.name}</div>
+          <div class="compact-time">${dualFormatNoSeconds(utcDate, m.timeZone)}</div>
+        `;
+        announceGrid.appendChild(item);
+      });
+    }
+
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function isAnnouncementMode() {
+      const val = getParam("announce");
+      return val === "1" || val === "true" || val === "yes";
+    }
+
+    function parseAnnouncementUtc() {
+      const t = getParam("time");
+      if (!t) return null;
+
+      const isoTry = new Date(t);
+      if (!isNaN(isoTry)) return isoTry;
+
+      const m = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/);
+      if (!m) return null;
+
+      const [_, yyyy, mm, dd, hh, mi] = m;
+      return new Date(Date.UTC(+yyyy, +mm - 1, +dd, +hh, +mi));
+    }
+
+    // Click-to-announce from Event Planner headers
+    function showAnnouncementFromOption(optionIndex) {
+      const opt = eventOptions[optionIndex];
+      if (!opt || !opt.utcDate) return;
+
+      // Transition: reveal announcement AFTER planner
+      announceWrapper.style.display = "block";
+      renderAnnouncement(opt.utcDate);
+      announceWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // Update URL to shareable announcement link
+      const params = new URLSearchParams(window.location.search);
+      params.set("announce", "1");
+      params.set("time", opt.utcDate.toISOString());
+
+      const title = (eventBoardTitleInput.value || eventBoardTitleDisplay.textContent || "").trim();
+      if (title) params.set("title", title);
+
+      history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+    }
+
+    function wireOptionHeaderClicks() {
+      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
+        const th = document.getElementById(`optionHeader${i + 1}`);
+        if (!th) continue;
+
+        th.style.cursor = "pointer";
+        th.title = "Click to create the Announcement image for this option";
+        th.setAttribute("tabindex", "0");
+        th.setAttribute("role", "button");
+        th.setAttribute("aria-label", `Open announcement for option ${i + 1}`);
+
+        th.addEventListener("click", () => showAnnouncementFromOption(i));
+        th.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            showAnnouncementFromOption(i);
+          }
+        });
+      }
+    }
+
     function setupEventInputs() {
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const timeInput = document.getElementById(`eventTime${i + 1}`);
-
         flatpickr(timeInput, {
           enableTime: true,
           time_24hr: true,
@@ -313,24 +489,6 @@
           }
         });
       }
-    }
-
-    function getLocalHourForUtcDate(utcDate, timeZone) {
-      const zoned = new Date(utcDate.toLocaleString("en-US", { timeZone }));
-      return zoned.getHours();
-    }
-
-    function classifyHour(hour) {
-      if (hour >= 9 && hour < 22) return "good";
-      if ((hour >= 7 && hour < 9) || (hour >= 22 && hour < 24)) return "okay";
-      return "bad";
-    }
-
-    function getSlotClassForHour(hour) {
-      const cls = classifyHour(hour);
-      if (cls === "good") return "slot-good";
-      if (cls === "okay") return "slot-okay";
-      return "slot-bad";
     }
 
     function formatDateForInput(date) {
@@ -349,23 +507,62 @@
 
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const utcDate = eventOptions[i].utcDate;
-        if (utcDate) {
-          params.set(`time${i + 1}`, utcDate.toISOString());
-        }
+        if (utcDate) params.set(`time${i + 1}`, utcDate.toISOString());
       }
 
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      history.replaceState({}, "", newUrl);
+      const ann = new URLSearchParams(window.location.search);
+      if (ann.get("announce")) params.set("announce", ann.get("announce"));
+      if (ann.get("time")) params.set("time", ann.get("time"));
+      if (ann.get("title") && !title) params.set("title", ann.get("title"));
+
+      history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
     }
+
+    async function posterToCanvas() {
+      // Ensure the poster is visible for capture
+      const prevDisplay = announcePosterEl.style.display;
+      announcePosterEl.style.display = "block";
+
+      const canvas = await html2canvas(announcePosterEl, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true
+      });
+
+      announcePosterEl.style.display = prevDisplay;
+      return canvas;
+    }
+
+    document.getElementById("copyAnnounceImage").addEventListener("click", async () => {
+      try {
+        const canvas = await posterToCanvas();
+        const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      } catch (err) {
+        alert("Copy image failed (often requires HTTPS). Use Download PNG instead.");
+        console.error(err);
+      }
+    });
+
+    document.getElementById("downloadAnnounceImage").addEventListener("click", async () => {
+      const canvas = await posterToCanvas();
+      const a = document.createElement("a");
+      a.download = "event-announcement.png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    });
 
     function loadFromURLParams() {
       const params = new URLSearchParams(window.location.search);
+
+      // Planner title
       const title = params.get("title");
       if (title) {
         eventBoardTitleInput.value = title;
         eventBoardTitleDisplay.textContent = title;
       }
 
+      // Planner options
       for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
         const isoStr = params.get(`time${i + 1}`);
         if (isoStr) {
@@ -379,10 +576,18 @@
 
       renderEventBoard();
 
-      // Auto-show planner if values exist
       if (title || params.get("time1")) {
         document.getElementById("eventPlannerWrapper").style.display = "block";
         document.getElementById("toggleEventPlanner").textContent = "Hide Event Planner";
+      }
+
+      // Direct announcement mode via URL
+      if (isAnnouncementMode()) {
+        const utcDate = parseAnnouncementUtc();
+        if (utcDate) {
+          announceWrapper.style.display = "block";
+          renderAnnouncement(utcDate);
+        }
       }
     }
 
@@ -394,6 +599,7 @@
     });
 
     setupEventInputs();
+    wireOptionHeaderClicks();
     renderCurrent();
     renderEventBoard();
     loadFromURLParams();
