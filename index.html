@@ -248,6 +248,24 @@
         el.classList.toggle('tl-sel-first', inSel && c === selStart);
         el.classList.toggle('tl-sel-last',  inSel && c === selEnd);
       });
+      // Update header badges
+      document.querySelectorAll('th[data-col]').forEach(th => {
+        const badge = th.querySelector('.tl-col-badge');
+        if (!badge) return;
+        const c = parseInt(th.dataset.col);
+        const isNow = th.classList.contains('tl-cur');
+        const isSelFirst = selStart !== null && c === selStart;
+        if (isNow) {
+          badge.textContent = 'NOW';
+          badge.className = 'tl-col-badge tl-badge-now';
+        } else if (isSelFirst) {
+          badge.textContent = `${String(selStart).padStart(2,'0')}:00`;
+          badge.className = 'tl-col-badge tl-badge-sel';
+        } else {
+          badge.textContent = '';
+          badge.className = 'tl-col-badge';
+        }
+      });
     }
 
     function updateSelectionBar() {
@@ -330,7 +348,7 @@
       let head = '<tr><th class="tl-name-th">Member</th>';
       for (let h = 0; h < 24; h++) {
         const cur = isToday && h === currentUtcHour;
-        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}" data-col="${h}">${h}<span class="tl-utc-sub">UTC</span></th>`;
+        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}" data-col="${h}"><span class="tl-col-badge"></span>${h}<span class="tl-utc-sub">UTC</span></th>`;
       }
       head += '</tr>';
       document.getElementById('tlHead').innerHTML = head;
