@@ -245,8 +245,8 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   border-radius: 999px;
   padding: 0.2rem 0.5rem 0.2rem 0.75rem;
 }
@@ -254,12 +254,12 @@ input:focus {
 .sel-bar-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e40af;
+  color: #5b21b6;
   white-space: nowrap;
 }
 
 .sel-bar-announce {
-  background: #2563eb;
+  background: #7c3aed;
   color: #fff;
   border: none;
   border-radius: 0.4rem;
@@ -270,43 +270,66 @@ input:focus {
   cursor: pointer;
   white-space: nowrap;
 }
-.sel-bar-announce:hover { background: #1d4ed8; }
+.sel-bar-announce:hover { background: #6d28d9; }
 
 .sel-bar-clear {
   background: transparent;
-  border: 1px solid #93c5fd;
+  border: 1px solid #c4b5fd;
   border-radius: 0.4rem;
-  color: #60a5fa;
+  color: #7c3aed;
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
   font-family: inherit;
   cursor: pointer;
   line-height: 1;
 }
-.sel-bar-clear:hover { background: #dbeafe; color: #2563eb; }
+.sel-bar-clear:hover { background: #ede9fe; color: #6d28d9; }
+
+/* ── Column header badges ── */
+.tl-col-badge {
+  display: block;
+  height: 14px;
+  line-height: 14px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  border-radius: 3px;
+  margin-bottom: 2px;
+}
+.tl-badge-now {
+  background: #2563eb;
+  color: #fff;
+  padding: 0 4px;
+}
+.tl-badge-sel {
+  background: #7c3aed;
+  color: #fff;
+  padding: 0 4px;
+}
 
 /* ── Column selection highlight ── */
 /* Header of selected columns */
 .tl-hour-th.tl-selected {
-  background: rgba(99, 102, 241, 0.14);
-  color: #4338ca;
+  background: rgba(124, 58, 237, 0.12);
+  color: #6d28d9;
 }
 /* Left edge of selection */
-.tl-hour-th.tl-sel-first { box-shadow: inset 2px 0 0 #6366f1; }
+.tl-hour-th.tl-sel-first { box-shadow: inset 2px 0 0 #7c3aed; }
 /* Right edge */
-.tl-hour-th.tl-sel-last  { box-shadow: inset -2px 0 0 #6366f1; }
+.tl-hour-th.tl-sel-last  { box-shadow: inset -2px 0 0 #7c3aed; }
 /* Both (single column) */
-.tl-hour-th.tl-sel-first.tl-sel-last { box-shadow: inset 2px 0 0 #6366f1, inset -2px 0 0 #6366f1; }
+.tl-hour-th.tl-sel-first.tl-sel-last { box-shadow: inset 2px 0 0 #7c3aed, inset -2px 0 0 #7c3aed; }
 
 /* Body cells of selected columns — tint on top of slot colors */
-.tl-cell.tl-selected { background-color: rgba(99, 102, 241, 0.10); }
-.tl-cell.tl-sel-first { box-shadow: inset 2px 0 0 #6366f1; }
-.tl-cell.tl-sel-last  { box-shadow: inset -2px 0 0 #6366f1; }
-.tl-cell.tl-sel-first.tl-sel-last { box-shadow: inset 2px 0 0 #6366f1, inset -2px 0 0 #6366f1; }
+.tl-cell.tl-selected { background-color: rgba(124, 58, 237, 0.09); }
+.tl-cell.tl-sel-first { box-shadow: inset 2px 0 0 #7c3aed; }
+.tl-cell.tl-sel-last  { box-shadow: inset -2px 0 0 #7c3aed; }
+.tl-cell.tl-sel-first.tl-sel-last { box-shadow: inset 2px 0 0 #7c3aed, inset -2px 0 0 #7c3aed; }
 
 /* Combined with current-hour marker */
-.tl-cell.tl-cur.tl-sel-first { box-shadow: inset 2px 0 0 #6366f1, inset -2px 0 0 #2563eb; }
-.tl-cell.tl-cur.tl-sel-last  { box-shadow: inset 2px 0 0 #2563eb, inset -2px 0 0 #6366f1; }
+.tl-cell.tl-cur.tl-sel-first { box-shadow: inset 2px 0 0 #7c3aed, inset -2px 0 0 #2563eb; }
+.tl-cell.tl-cur.tl-sel-last  { box-shadow: inset 2px 0 0 #2563eb, inset -2px 0 0 #7c3aed; }
 
 /* Current hour column — thick side borders, slot colors unchanged */
 .tl-cur {
