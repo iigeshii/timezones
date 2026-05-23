@@ -30,6 +30,8 @@
       <button class="icon-btn" id="tlPrevDay">&#8249;</button>
       <span id="tlDateLabel" class="tl-date-label"></span>
       <button class="icon-btn" id="tlNextDay">&#8250;</button>
+      <button class="icon-btn" id="tlCalBtn" title="Jump to date">&#128197;</button>
+      <input type="date" id="tlDatePicker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
       <button class="icon-btn today-btn" id="tlToday">Today</button>
       <span class="tl-toggle-hint" id="tlHint">Drag columns to select a time · Click a name to hide/show</span>
       <!-- Selection bar — inline in nav, no layout shift -->
@@ -294,7 +296,7 @@
 
     // Click outside timeline + selection bar clears selection
     document.addEventListener('click', e => {
-      if (!e.target.closest('#tlTable') && !e.target.closest('#selectionBar')) clearSelection();
+      if (!e.target.closest('#tlTable') && !e.target.closest('#selectionBar') && !e.target.closest('.tab-bar')) clearSelection();
     });
 
     document.getElementById('btnClearSel').addEventListener('click', () => clearSelection());
@@ -307,13 +309,6 @@
       ));
       switchTab('announce');
       renderAnnouncement(utcDate);
-
-      const params = new URLSearchParams();
-      params.set('announce', '1');
-      params.set('time', utcDate.toISOString());
-      const title = document.getElementById('eventTitle').value.trim();
-      if (title) params.set('title', title);
-      history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
     });
 
     // ── Timeline ──
@@ -434,12 +429,29 @@
       renderTimeline();
     });
 
+    document.getElementById('tlCalBtn').addEventListener('click', () => {
+      const picker = document.getElementById('tlDatePicker');
+      const y = tlViewDate.getUTCFullYear();
+      const m = String(tlViewDate.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(tlViewDate.getUTCDate()).padStart(2, '0');
+      picker.value = `${y}-${m}-${d}`;
+      picker.showPicker();
+    });
+
+    document.getElementById('tlDatePicker').addEventListener('change', e => {
+      if (!e.target.value) return;
+      const [y, mo, d] = e.target.value.split('-').map(Number);
+      tlViewDate = new Date(Date.UTC(y, mo - 1, d));
+      clearSelection();
+      renderTimeline();
+    });
+
     // ── Announcement ──
     let currentAnnounceUtc = null;
 
     function renderAnnouncement(utcDate) {
       currentAnnounceUtc = utcDate;
-      const title = (document.getElementById('eventTitle').value.trim() || getParam('title') || 'Event Announcement');
+      const title = (document.getElementById('eventTitle').value.trim() || 'Event Announcement');
       updatePosterTitle(title);
 
       const utcPretty = dualFormatNoSeconds(utcDate, "UTC");
@@ -469,7 +481,6 @@
     // Live title update
     document.getElementById('eventTitle').addEventListener('input', e => {
       updatePosterTitle(e.target.value.trim());
-      if (currentAnnounceUtc) updateURLParams();
     });
 
     async function posterToCanvas() {
@@ -496,41 +507,9 @@
       a.click();
     });
 
-    // ── URL params ──
-    function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
-
-    function updateURLParams() {
-      if (!currentAnnounceUtc) return;
-      const params = new URLSearchParams();
-      params.set('announce', '1');
-      params.set('time', currentAnnounceUtc.toISOString());
-      const title = document.getElementById('eventTitle').value.trim();
-      if (title) params.set('title', title);
-      history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
-    }
-
-    function loadFromURLParams() {
-      const ann = getParam('announce');
-      if (ann === '1' || ann === 'true') {
-        const t = getParam('time');
-        if (t) {
-          const d = new Date(t);
-          if (!isNaN(d)) {
-            const title = getParam('title');
-            if (title) document.getElementById('eventTitle').value = title;
-            history.replaceState({}, '', window.location.pathname);
-            switchTab('announce');
-            renderAnnouncement(d);
-            return;
-          }
-        }
-      }
-    }
-
     // ── Init ──
     renderTimeline();
     updateLocalNow();
-    loadFromURLParams();
 
     setInterval(() => {
       updateLocalNow();
