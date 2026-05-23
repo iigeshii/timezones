@@ -31,14 +31,13 @@
       <span id="tlDateLabel" class="tl-date-label"></span>
       <button class="icon-btn" id="tlNextDay">&#8250;</button>
       <button class="icon-btn today-btn" id="tlToday">Today</button>
-      <span class="tl-toggle-hint">Drag columns to select a time · Click a name to hide/show</span>
-    </div>
-
-    <!-- Selection bar — appears when columns are selected -->
-    <div id="selectionBar" class="sel-bar" style="display:none;">
-      <span id="selectionLabel" class="sel-bar-label"></span>
-      <button id="btnAnnounceFromSel" class="sel-bar-announce"></button>
-      <button id="btnClearSel" class="sel-bar-clear" title="Clear selection">✕</button>
+      <span class="tl-toggle-hint" id="tlHint">Drag columns to select a time · Click a name to hide/show</span>
+      <!-- Selection bar — inline in nav, no layout shift -->
+      <div id="selectionBar" class="sel-bar" style="display:none;">
+        <span id="selectionLabel" class="sel-bar-label"></span>
+        <button id="btnAnnounceFromSel" class="sel-bar-announce"></button>
+        <button id="btnClearSel" class="sel-bar-clear" title="Clear selection">✕</button>
+      </div>
     </div>
 
     <div class="card tl-card">
@@ -250,8 +249,13 @@
     }
 
     function updateSelectionBar() {
-      const bar = document.getElementById('selectionBar');
-      if (selStart === null) { bar.style.display = 'none'; return; }
+      const bar  = document.getElementById('selectionBar');
+      const hint = document.getElementById('tlHint');
+      if (selStart === null) {
+        bar.style.display  = 'none';
+        hint.style.display = '';
+        return;
+      }
 
       const dayStart = getUtcDayStart(tlViewDate);
       const dateStr = dayStart.toLocaleDateString('en-US', {
@@ -263,7 +267,8 @@
 
       document.getElementById('selectionLabel').textContent = `${dateStr} · ${rangeStr}`;
       document.getElementById('btnAnnounceFromSel').textContent = `→ Announce at ${s} UTC`;
-      bar.style.display = 'flex';
+      hint.style.display = 'none';
+      bar.style.display  = 'flex';
     }
 
     // Mouse/touch events for column drag-select
@@ -513,6 +518,7 @@
           if (!isNaN(d)) {
             const title = getParam('title');
             if (title) document.getElementById('eventTitle').value = title;
+            history.replaceState({}, '', window.location.pathname);
             switchTab('announce');
             renderAnnouncement(d);
             return;
