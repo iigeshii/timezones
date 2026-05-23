@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Crimson Cuckoo Coven — Time Zone Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -22,7 +21,6 @@
 
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="current">Current Times</button>
-    <button class="tab-btn" data-tab="planner">Event Planner</button>
     <button class="tab-btn" data-tab="announce">Announcement</button>
   </div>
 
@@ -33,55 +31,23 @@
       <span id="tlDateLabel" class="tl-date-label"></span>
       <button class="icon-btn" id="tlNextDay">&#8250;</button>
       <button class="icon-btn today-btn" id="tlToday">Today</button>
+      <span class="tl-toggle-hint">Drag columns to select a time · Click a name to hide/show</span>
     </div>
+
+    <!-- Selection bar — appears when columns are selected -->
+    <div id="selectionBar" class="sel-bar" style="display:none;">
+      <span id="selectionLabel" class="sel-bar-label"></span>
+      <button id="btnAnnounceFromSel" class="sel-bar-announce"></button>
+      <button id="btnClearSel" class="sel-bar-clear" title="Clear selection">✕</button>
+    </div>
+
     <div class="card tl-card">
       <div class="tl-scroll-wrapper" id="tlScrollWrapper">
-        <table class="tl-table">
+        <table class="tl-table" id="tlTable">
           <thead id="tlHead"></thead>
           <tbody id="tlBody"></tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- ── Tab: Event Planner ── -->
-  <div class="tab-panel" id="panel-planner" style="display:none;">
-    <div class="card">
-      <div class="control-group">
-        <label>Event Board Title</label>
-        <input id="eventBoardTitle" type="text" placeholder="Event Time Board"
-          style="margin-bottom:0.75rem; width:100%; max-width:400px;" />
-
-        <label>Event Options <span class="small-note" style="display:inline;">(enter times in UTC)</span></label>
-        <div class="small-note" style="margin-bottom:0.5rem;">Up to four UTC times — the board converts them to each member's local time.</div>
-
-        <div class="event-options-grid">
-          <div><div class="small-note" style="margin-top:0.25rem;">Option 1</div><input id="eventTime1" type="text" placeholder="YYYY-MM-DD HH:MM" /></div>
-          <div><div class="small-note" style="margin-top:0.25rem;">Option 2</div><input id="eventTime2" type="text" placeholder="YYYY-MM-DD HH:MM" /></div>
-          <div><div class="small-note" style="margin-top:0.25rem;">Option 3</div><input id="eventTime3" type="text" placeholder="YYYY-MM-DD HH:MM" /></div>
-          <div><div class="small-note" style="margin-top:0.25rem;">Option 4</div><input id="eventTime4" type="text" placeholder="YYYY-MM-DD HH:MM" /></div>
-        </div>
-
-        <div class="small-note" style="margin-top:0.75rem;">
-          Tip: click an <strong>Option</strong> column header in the table below to generate a shareable Announcement.
-        </div>
-      </div>
-    </div>
-
-    <div class="card table-card">
-      <div class="card-title" id="eventBoardTitleDisplay">Event Time Board</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th id="optionHeader1" class="option-header">Option 1</th>
-            <th id="optionHeader2" class="option-header">Option 2</th>
-            <th id="optionHeader3" class="option-header">Option 3</th>
-            <th id="optionHeader4" class="option-header">Option 4</th>
-          </tr>
-        </thead>
-        <tbody id="eventBody"></tbody>
-      </table>
     </div>
   </div>
 
@@ -93,10 +59,14 @@
         <div class="card-title" id="announceTitle">Event Announcement</div>
         <div class="controls" style="margin-top:0.75rem;">
           <div class="control-group">
-            <label>Event time (UTC)</label>
-            <div id="announceUtc" class="highlight"></div>
+            <label>Event name</label>
+            <input id="eventTitle" type="text" placeholder="e.g. Raid Night" style="max-width:300px;" />
           </div>
-          <div class="control-group" style="min-width:260px;">
+          <div class="control-group">
+            <label>Time (UTC)</label>
+            <div id="announceUtc" class="highlight" style="margin-top:0.2rem;"></div>
+          </div>
+          <div class="control-group" style="min-width:220px;">
             <label>Share</label>
             <div class="quick-buttons">
               <button id="copyAnnounceImage" class="quick-button">Copy image</button>
@@ -125,62 +95,44 @@
     <div id="announceEmpty" class="card announce-empty">
       <div class="announce-empty-icon">📅</div>
       <div class="announce-empty-title">No announcement yet</div>
-      <div class="small-note">Go to <strong>Event Planner</strong> and click an Option header to generate a shareable announcement.</div>
+      <div class="small-note">Go to <strong>Current Times</strong>, drag to select time columns, then click <strong>→ Announce</strong>.</div>
     </div>
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
     // ── Members ──
     const members = [
-      { name: "Universal (UTC)",            timeZone: "UTC" },
-      { name: "GeshGiezel",                 timeZone: "America/Phoenix" },
-      { name: "The Auld Witch / Poppie",    timeZone: "Europe/London" },
-      { name: "Fredo / Bomberbird248",      timeZone: "Europe/Berlin" },
-      { name: "Skullman",                   timeZone: "Europe/London" },
-      { name: "Kaiusz / KVG89",             timeZone: "Europe/Amsterdam" },
-      { name: "Cloud / DiabolicalCloud",    timeZone: "America/Regina" },
-      { name: "Emsi1y2255",                 timeZone: "America/Chicago" },
-      { name: "Kitty / porcelaingamer8",    timeZone: "America/New_York" },
-      { name: "Hitesh / Hitesh2550",        timeZone: "Asia/Kolkata" },
-      { name: "Tala / Aikois",              timeZone: "Asia/Manila" },
-      { name: "Flameboi789 / Flame7484",    timeZone: "America/Los_Angeles" },
-      { name: "zet / SvelteAtom2577",       timeZone: "Europe/Berlin" },
-      { name: "Suwa / Suwa7506",            timeZone: "Asia/Kolkata" },
-      { name: "Lil Roony / Lil Roony woo",  timeZone: "Asia/Kolkata" },
-      { name: "LadyVonDawn",               timeZone: "Asia/Manila" },
+      { name: "GeshGiezel",                timeZone: "America/Phoenix" },
+      { name: "The Auld Witch / Poppie",   timeZone: "Europe/London" },
+      { name: "Fredo / Bomberbird248",     timeZone: "Europe/Berlin" },
+      { name: "Skullman",                  timeZone: "Europe/London" },
+      { name: "Kaiusz / KVG89",            timeZone: "Europe/Amsterdam" },
+      { name: "Cloud / DiabolicalCloud",   timeZone: "America/Regina" },
+      { name: "Emsi1y2255",                timeZone: "America/Chicago" },
+      { name: "Kitty / porcelaingamer8",   timeZone: "America/New_York" },
+      { name: "Hitesh / Hitesh2550",       timeZone: "Asia/Kolkata" },
+      { name: "Tala / Aikois",             timeZone: "Asia/Manila" },
+      { name: "Flameboi789 / Flame7484",   timeZone: "America/Los_Angeles" },
+      { name: "zet / SvelteAtom2577",      timeZone: "Europe/Berlin" },
+      { name: "Suwa / Suwa7506",           timeZone: "Asia/Kolkata" },
+      { name: "Lil Roony / Lil Roony woo", timeZone: "Asia/Kolkata" },
+      { name: "LadyVonDawn",              timeZone: "Asia/Manila" },
     ];
 
-    const EVENT_OPTION_COUNT = 4;
-    const eventOptions = Array.from({ length: EVENT_OPTION_COUNT }, () => ({ utcDate: null }));
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     // ── Tabs ──
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
-
     function switchTab(id) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
       document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.getElementById(`panel-${id}`).style.display = 'block';
     }
 
-    // ── Shared formatters ──
-    function dualFormat(date, timeZone) {
-      if (!date) return "—";
-      const f24 = new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        hour12: false, weekday: "short", month: "short", day: "2-digit", timeZone,
-      }).format(date);
-      const f12 = new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        hour12: true, timeZone,
-      }).format(date);
-      return `${f24}<br><span class="twelve-hour">${f12}</span>`;
-    }
-
+    // ── Formatters ──
     function dualFormatNoSeconds(date, timeZone) {
       if (!date) return "—";
       const f24 = new Intl.DateTimeFormat("en-US", {
@@ -201,9 +153,9 @@
         .formatToParts(now).find(p => p.type === "timeZoneName")?.value?.replace("UTC", "GMT") || "";
       const preferred = {
         "Europe/Berlin": "CET", "Europe/Amsterdam": "CET", "Europe/London": "BST",
-        "Asia/Singapore": "SGT", "America/Phoenix": "MST", "America/Chicago": "CST",
-        "America/New_York": "EST", "America/Regina": "CST", "Asia/Kolkata": "IST",
-        "Asia/Manila": "PHT", "America/Los_Angeles": "PST", "UTC": "UTC",
+        "America/Phoenix": "MST", "America/Chicago": "CDT", "America/New_York": "EDT",
+        "America/Regina": "CST", "Asia/Kolkata": "IST", "Asia/Manila": "PHT",
+        "America/Los_Angeles": "PDT", "UTC": "UTC",
       };
       let abbr = short;
       if ((abbr === offset || abbr === "") && preferred[timeZone]) abbr = preferred[timeZone];
@@ -219,22 +171,14 @@
       if ((h >= 7 && h < 9) || (h >= 22 && h < 24)) return "okay";
       return "bad";
     }
+    function getSlotClass(h) { return `slot-${classifyHour(h)}`; }
 
-    function getSlotClass(h) {
-      return `slot-${classifyHour(h)}`;
-    }
-
-    function getUtcOffsetMs(timeZone) {
+    function getUtcOffsetMs(tz) {
       const now = new Date();
-      return new Date(now.toLocaleString("en-US", { timeZone })) - now;
+      return new Date(now.toLocaleString("en-US", { timeZone: tz })) - now;
     }
-
     function getUtcDayStart(date) {
       return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-    }
-
-    function sortByOffset() {
-      return [...members].sort((a, b) => getUtcOffsetMs(b.timeZone) - getUtcOffsetMs(a.timeZone));
     }
 
     function sortByLocalTime(date) {
@@ -242,6 +186,27 @@
         const ts = tz => new Date(date.toLocaleString("en-US", { timeZone: tz })).getTime();
         return ts(b.timeZone) - ts(a.timeZone);
       });
+    }
+
+    // ── Member visibility toggle ──
+    let disabledMembers = new Set(JSON.parse(localStorage.getItem('ccc-disabled') || '[]'));
+
+    function toggleMember(name) {
+      if (disabledMembers.has(name)) disabledMembers.delete(name);
+      else disabledMembers.add(name);
+      localStorage.setItem('ccc-disabled', JSON.stringify([...disabledMembers]));
+      const w = document.getElementById('tlScrollWrapper');
+      const s = w.scrollLeft;
+      renderTimeline();
+      w.scrollLeft = s;
+      applySelectionClasses();
+    }
+
+    function sortByOffset() {
+      const byOffset = (a, b) => getUtcOffsetMs(b.timeZone) - getUtcOffsetMs(a.timeZone);
+      const active   = members.filter(m => !disabledMembers.has(m.name)).sort(byOffset);
+      const disabled = members.filter(m =>  disabledMembers.has(m.name)).sort(byOffset);
+      return { active, disabled };
     }
 
     // ── Local time chip ──
@@ -252,6 +217,99 @@
         hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true, timeZone: localTimeZone,
       }).format(new Date());
     }
+
+    // ── Column selection ──
+    let selStart = null, selEnd = null, isDragging = false, dragAnchor = null;
+
+    function getColFromEl(el) {
+      const cell = el?.closest('[data-col]');
+      return cell ? parseInt(cell.dataset.col) : null;
+    }
+
+    function setSelection(a, b) {
+      selStart = Math.min(a, b);
+      selEnd   = Math.max(a, b);
+      applySelectionClasses();
+      updateSelectionBar();
+    }
+
+    function clearSelection() {
+      selStart = selEnd = dragAnchor = null;
+      applySelectionClasses();
+      updateSelectionBar();
+    }
+
+    function applySelectionClasses() {
+      document.querySelectorAll('[data-col]').forEach(el => {
+        const c = parseInt(el.dataset.col);
+        const inSel = selStart !== null && c >= selStart && c <= selEnd;
+        el.classList.toggle('tl-selected',  inSel);
+        el.classList.toggle('tl-sel-first', inSel && c === selStart);
+        el.classList.toggle('tl-sel-last',  inSel && c === selEnd);
+      });
+    }
+
+    function updateSelectionBar() {
+      const bar = document.getElementById('selectionBar');
+      if (selStart === null) { bar.style.display = 'none'; return; }
+
+      const dayStart = getUtcDayStart(tlViewDate);
+      const dateStr = dayStart.toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+      });
+      const s = `${String(selStart).padStart(2,'0')}:00`;
+      const e = `${String(selEnd).padStart(2,'0')}:00`;
+      const rangeStr = selStart === selEnd ? `${s} UTC` : `${s}–${e} UTC`;
+
+      document.getElementById('selectionLabel').textContent = `${dateStr} · ${rangeStr}`;
+      document.getElementById('btnAnnounceFromSel').textContent = `→ Announce at ${s} UTC`;
+      bar.style.display = 'flex';
+    }
+
+    // Mouse/touch events for column drag-select
+    const tlTable = document.getElementById('tlTable');
+
+    tlTable.addEventListener('mousedown', e => {
+      const col = getColFromEl(e.target);
+      if (col === null) return;
+      isDragging = true;
+      dragAnchor = col;
+      setSelection(col, col);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const col = getColFromEl(el);
+      if (col !== null) setSelection(dragAnchor, col);
+    });
+
+    document.addEventListener('mouseup', () => { isDragging = false; });
+
+    // Click outside timeline + selection bar clears selection
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#tlTable') && !e.target.closest('#selectionBar')) clearSelection();
+    });
+
+    document.getElementById('btnClearSel').addEventListener('click', () => clearSelection());
+
+    document.getElementById('btnAnnounceFromSel').addEventListener('click', () => {
+      if (selStart === null) return;
+      const dayStart = getUtcDayStart(tlViewDate);
+      const utcDate = new Date(Date.UTC(
+        dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), selStart, 0, 0
+      ));
+      switchTab('announce');
+      renderAnnouncement(utcDate);
+
+      const params = new URLSearchParams();
+      params.set('announce', '1');
+      params.set('time', utcDate.toISOString());
+      const title = document.getElementById('eventTitle').value.trim();
+      if (title) params.set('title', title);
+      history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    });
 
     // ── Timeline ──
     let tlViewDate = new Date();
@@ -268,33 +326,29 @@
         weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
       });
 
-      // Header row
+      // Header
       let head = '<tr><th class="tl-name-th">Member</th>';
       for (let h = 0; h < 24; h++) {
         const cur = isToday && h === currentUtcHour;
-        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}">${h}<span class="tl-utc-sub">UTC</span></th>`;
+        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}" data-col="${h}">${h}<span class="tl-utc-sub">UTC</span></th>`;
       }
       head += '</tr>';
       document.getElementById('tlHead').innerHTML = head;
 
-      // Body rows
-      const sorted = sortByOffset();
+      // Rows
+      const { active, disabled } = sortByOffset();
       let body = '';
 
-      sorted.forEach(m => {
-        const isUtc = m.timeZone === 'UTC';
-        // Base local day (at UTC 00:00 for this view date)
-        const hour0Utc = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), 0, 0, 0));
-        const baseDay = new Date(hour0Utc.toLocaleString("en-US", { timeZone: m.timeZone })).getDate();
-
-        // Live time for left column
+      function buildRow(m, isDisabled) {
+        const hour0 = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), 0, 0, 0));
+        const baseDay = new Date(hour0.toLocaleString("en-US", { timeZone: m.timeZone })).getDate();
         const localNow = new Date(now.toLocaleString("en-US", { timeZone: m.timeZone }));
         const lh = localNow.getHours(), lm = localNow.getMinutes();
-        const lh12 = lh % 12 || 12;
-        const lap = lh < 12 ? 'am' : 'pm';
+        const lh12 = lh % 12 || 12, lap = lh < 12 ? 'am' : 'pm';
+        const title = isDisabled ? 'Click to show' : 'Click to hide';
 
-        body += `<tr class="${isUtc ? 'tl-utc-row' : ''}">
-          <td class="tl-name-cell">
+        let row = `<tr class="${isDisabled ? 'tl-row-disabled' : ''}">
+          <td class="tl-name-cell" data-member="${m.name.replace(/"/g,'&quot;')}" title="${title}">
             <div class="tl-member-name">${m.name}</div>
             <div class="tl-tz-label">${getZoneLabel(m.timeZone)}</div>
             ${isToday ? `<div class="tl-live-time" data-tz="${m.timeZone}">${lh12}:${String(lm).padStart(2,'0')} ${lap}</div>` : ''}
@@ -302,29 +356,33 @@
 
         let prevDay = baseDay;
         for (let h = 0; h < 24; h++) {
-          const utcMoment = new Date(Date.UTC(
-            dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), h, 0, 0
-          ));
+          const utcMoment = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), h, 0, 0));
           const localMoment = new Date(utcMoment.toLocaleString("en-US", { timeZone: m.timeZone }));
           const localHour = localMoment.getHours();
           const localDay = localMoment.getDate();
-          const h12 = localHour % 12 || 12;
-          const ap = localHour < 12 ? 'am' : 'pm';
-          const slotCls = getSlotClass(localHour);
+          const h12 = localHour % 12 || 12, ap = localHour < 12 ? 'am' : 'pm';
+          const slotCls = isDisabled ? 'slot-hidden' : getSlotClass(localHour);
           const cur = isToday && h === currentUtcHour;
           const dayChanged = localDay !== prevDay;
           prevDay = localDay;
 
-          body += `<td class="tl-cell ${slotCls}${cur ? ' tl-cur' : ''}">
+          row += `<td class="tl-cell ${slotCls}${cur ? ' tl-cur' : ''}" data-col="${h}">
             ${dayChanged ? `<div class="tl-day-badge">${localMoment.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:m.timeZone})}</div>` : ''}
             <div class="tl-hr">${h12}</div>
             <div class="tl-ap">${ap}</div>
           </td>`;
         }
-        body += '</tr>';
-      });
+        return row + '</tr>';
+      }
+
+      active.forEach(m => { body += buildRow(m, false); });
+      if (disabled.length) {
+        body += `<tr class="tl-separator"><td class="tl-sep-cell" colspan="25">Hidden members — click to restore</td></tr>`;
+        disabled.forEach(m => { body += buildRow(m, true); });
+      }
 
       document.getElementById('tlBody').innerHTML = body;
+      applySelectionClasses();
 
       if (tlFirstRender && isToday) {
         tlFirstRender = false;
@@ -339,103 +397,45 @@
     function updateLiveTimes() {
       const now = new Date();
       document.querySelectorAll('.tl-live-time[data-tz]').forEach(el => {
-        const tz = el.dataset.tz;
-        const local = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+        const local = new Date(now.toLocaleString("en-US", { timeZone: el.dataset.tz }));
         const lh = local.getHours(), lm = local.getMinutes();
-        const h12 = lh % 12 || 12;
-        const ap = lh < 12 ? 'am' : 'pm';
+        const h12 = lh % 12 || 12, ap = lh < 12 ? 'am' : 'pm';
         el.textContent = `${h12}:${String(lm).padStart(2,'0')} ${ap}`;
       });
     }
 
+    // Member name click toggle (delegation)
+    document.getElementById('tlBody').addEventListener('click', e => {
+      const cell = e.target.closest('.tl-name-cell[data-member]');
+      if (!cell) return;
+      toggleMember(cell.dataset.member);
+    });
+
+    // Day nav
     document.getElementById('tlPrevDay').addEventListener('click', () => {
       tlViewDate = new Date(tlViewDate.getTime() - 86400000);
+      clearSelection();
       renderTimeline();
     });
     document.getElementById('tlNextDay').addEventListener('click', () => {
       tlViewDate = new Date(tlViewDate.getTime() + 86400000);
+      clearSelection();
       renderTimeline();
     });
     document.getElementById('tlToday').addEventListener('click', () => {
       tlViewDate = new Date();
       tlFirstRender = true;
+      clearSelection();
       renderTimeline();
     });
 
-    // ── Event Planner ──
-    const eventBoardTitleInput = document.getElementById("eventBoardTitle");
-    const eventBoardTitleDisplay = document.getElementById("eventBoardTitleDisplay");
-
-    eventBoardTitleInput.addEventListener("input", () => {
-      eventBoardTitleDisplay.textContent = eventBoardTitleInput.value.trim() || "Event Time Board";
-      updateURLParams();
-    });
-
-    function localSelectionToUTC(date) {
-      if (!date) return null;
-      return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()));
-    }
-
-    function renderEventBoard() {
-      const eventBody = document.getElementById("eventBody");
-      const stats = Array.from({ length: EVENT_OPTION_COUNT }, () => ({ good: 0, okay: 0, bad: 0 }));
-      const now = new Date();
-      const sorted = sortByLocalTime(now);
-
-      let html = '';
-      sorted.forEach(m => {
-        const isUtc = m.timeZone === 'UTC';
-        html += `<tr class="${isUtc ? 'utc-row' : ''}">
-          <td class="name-cell">${m.name}<div class="tz-cell">${m.timeZone} ${getZoneLabel(m.timeZone)}</div></td>`;
-        for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-          const opt = eventOptions[i];
-          if (!opt.utcDate) {
-            html += `<td class="event-empty">—</td>`;
-          } else {
-            const h = getLocalHourForUtcDate(opt.utcDate, m.timeZone);
-            const cls = getSlotClass(h);
-            if (cls === 'slot-good') stats[i].good++;
-            else if (cls === 'slot-okay') stats[i].okay++;
-            else stats[i].bad++;
-            html += `<td class="${cls}">${dualFormat(opt.utcDate, m.timeZone)}</td>`;
-          }
-        }
-        html += '</tr>';
-      });
-      eventBody.innerHTML = html;
-
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        const el = document.getElementById(`optionHeader${i + 1}`);
-        const opt = eventOptions[i];
-        if (!opt.utcDate) {
-          el.innerHTML = `Option ${i + 1}`;
-        } else {
-          const s = stats[i];
-          el.innerHTML = `Option ${i + 1}<br>
-            <span class="twelve-hour">UTC: ${dualFormat(opt.utcDate, "UTC")}</span><br>
-            <span class="option-stats">✓ ${s.good} &middot; ~ ${s.okay} &middot; ✗ ${s.bad}</span>`;
-        }
-      }
-    }
-
-    function setupEventInputs() {
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        flatpickr(document.getElementById(`eventTime${i + 1}`), {
-          enableTime: true, time_24hr: true, dateFormat: "Y-m-d H:i",
-          onChange: (dates) => {
-            eventOptions[i].utcDate = localSelectionToUTC(dates[0] || null);
-            renderEventBoard();
-            updateURLParams();
-          }
-        });
-      }
-    }
-
     // ── Announcement ──
+    let currentAnnounceUtc = null;
+
     function renderAnnouncement(utcDate) {
-      const title = (eventBoardTitleInput.value || getParam("title") || "Event Announcement").trim();
-      document.getElementById('announceTitle').textContent = title;
-      document.getElementById('announcePosterTitleCompact').textContent = title;
+      currentAnnounceUtc = utcDate;
+      const title = (document.getElementById('eventTitle').value.trim() || getParam('title') || 'Event Announcement');
+      updatePosterTitle(title);
 
       const utcPretty = dualFormatNoSeconds(utcDate, "UTC");
       document.getElementById('announceUtc').innerHTML = utcPretty;
@@ -446,7 +446,7 @@
       sortByLocalTime(new Date()).forEach(m => {
         const h = getLocalHourForUtcDate(utcDate, m.timeZone);
         const item = document.createElement('div');
-        item.className = `compact-item ${getSlotClass(h)}${m.timeZone === 'UTC' ? ' compact-utc' : ''}`;
+        item.className = `compact-item ${getSlotClass(h)}`;
         item.innerHTML = `<div class="compact-name">${m.name}</div><div class="compact-time">${dualFormatNoSeconds(utcDate, m.timeZone)}</div>`;
         grid.appendChild(item);
       });
@@ -455,33 +455,17 @@
       document.getElementById('announceEmpty').style.display = 'none';
     }
 
-    function showAnnouncementFromOption(idx) {
-      const opt = eventOptions[idx];
-      if (!opt || !opt.utcDate) return;
-      switchTab('announce');
-      renderAnnouncement(opt.utcDate);
-
-      const params = new URLSearchParams(window.location.search);
-      params.set("announce", "1");
-      params.set("time", opt.utcDate.toISOString());
-      const title = eventBoardTitleInput.value.trim();
-      if (title) params.set("title", title);
-      history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+    function updatePosterTitle(title) {
+      const t = title || 'Event Announcement';
+      document.getElementById('announceTitle').textContent = t;
+      document.getElementById('announcePosterTitleCompact').textContent = t;
     }
 
-    function wireOptionHeaders() {
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        const th = document.getElementById(`optionHeader${i + 1}`);
-        th.style.cursor = "pointer";
-        th.title = "Click to generate Announcement for this option";
-        th.setAttribute("tabindex", "0");
-        th.setAttribute("role", "button");
-        th.addEventListener("click", () => showAnnouncementFromOption(i));
-        th.addEventListener("keydown", e => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showAnnouncementFromOption(i); }
-        });
-      }
-    }
+    // Live title update
+    document.getElementById('eventTitle').addEventListener('input', e => {
+      updatePosterTitle(e.target.value.trim());
+      if (currentAnnounceUtc) updateURLParams();
+    });
 
     async function posterToCanvas() {
       const el = document.getElementById('announcePosterCompact');
@@ -496,9 +480,7 @@
       try {
         const blob = await new Promise(res => posterToCanvas().then(c => c.toBlob(res, "image/png")));
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      } catch (err) {
-        alert("Copy failed (requires HTTPS). Use Download PNG instead.");
-      }
+      } catch { alert("Copy failed (requires HTTPS). Use Download PNG instead."); }
     });
 
     document.getElementById("downloadAnnounceImage").addEventListener("click", async () => {
@@ -512,64 +494,34 @@
     // ── URL params ──
     function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
 
-    function formatDateForInput(date) {
-      return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')} ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')}`;
-    }
-
     function updateURLParams() {
+      if (!currentAnnounceUtc) return;
       const params = new URLSearchParams();
-      const title = eventBoardTitleInput.value.trim();
-      if (title) params.set("title", title);
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        if (eventOptions[i].utcDate) params.set(`time${i+1}`, eventOptions[i].utcDate.toISOString());
-      }
-      const cur = new URLSearchParams(window.location.search);
-      if (cur.get("announce")) params.set("announce", cur.get("announce"));
-      if (cur.get("time")) params.set("time", cur.get("time"));
-      if (cur.get("title") && !title) params.set("title", cur.get("title"));
-      history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+      params.set('announce', '1');
+      params.set('time', currentAnnounceUtc.toISOString());
+      const title = document.getElementById('eventTitle').value.trim();
+      if (title) params.set('title', title);
+      history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
     }
 
     function loadFromURLParams() {
-      const params = new URLSearchParams(window.location.search);
-      const title = params.get("title");
-      if (title) {
-        eventBoardTitleInput.value = title;
-        eventBoardTitleDisplay.textContent = title;
-      }
-
-      let hasPlanner = false;
-      for (let i = 0; i < EVENT_OPTION_COUNT; i++) {
-        const iso = params.get(`time${i+1}`);
-        if (iso) {
-          const d = new Date(iso);
-          if (!isNaN(d)) {
-            eventOptions[i].utcDate = d;
-            document.getElementById(`eventTime${i+1}`).value = formatDateForInput(d);
-            hasPlanner = true;
-          }
-        }
-      }
-      renderEventBoard();
-
-      const ann = params.get("announce");
-      if (ann === "1" || ann === "true") {
-        const t = params.get("time");
+      const ann = getParam('announce');
+      if (ann === '1' || ann === 'true') {
+        const t = getParam('time');
         if (t) {
           const d = new Date(t);
           if (!isNaN(d)) {
+            const title = getParam('title');
+            if (title) document.getElementById('eventTitle').value = title;
             switchTab('announce');
             renderAnnouncement(d);
             return;
           }
         }
       }
-      if (hasPlanner || title) switchTab('planner');
     }
 
     // ── Init ──
-    setupEventInputs();
-    wireOptionHeaders();
     renderTimeline();
     updateLocalNow();
     loadFromURLParams();
