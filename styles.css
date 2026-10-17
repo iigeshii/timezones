@@ -360,6 +360,18 @@ input:focus {
 .tl-cell.slot-hidden .tl-hr { color: #d1d5db; }
 .tl-cell.slot-hidden .tl-ap { color: #e2e8f0; }
 
+/* Member with unknown time zone: one big ??? across the row */
+.tl-cell.tl-unknown {
+  width: auto;
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.5em;
+}
+.tl-cell.tl-unknown.slot-hidden { color: #e2e8f0; }
+.poster .compact-unknown .compact-time { font-size: 1rem; font-weight: 800; color: #9ca3af; }
+
 /* Disabled member rows */
 .tl-row-disabled .tl-name-cell {
   opacity: 0.45;
