@@ -125,6 +125,7 @@
       //{ name: "LadyVonDawn",              timeZone: "Asia/Manila" },
       { name: "st.jpxfrd / Snoopy2743",    timeZone: "Asia/Singapore" },
       { name: "Gumdum / Gumdum1975",       timeZone: "America/Chicago" },
+      { name: "Leoxagon",                  timeZone: null }, // time zone unknown — shows as ???
     ];
 
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -188,8 +189,10 @@
       return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     }
 
+    // Members with no known time zone sort to the end
     function sortByLocalTime(date) {
       return [...members].sort((a, b) => {
+        if (!a.timeZone || !b.timeZone) return !a.timeZone - !b.timeZone;
         const ts = tz => new Date(date.toLocaleString("en-US", { timeZone: tz })).getTime();
         return ts(b.timeZone) - ts(a.timeZone);
       });
@@ -210,7 +213,10 @@
     }
 
     function sortByOffset() {
-      const byOffset = (a, b) => getUtcOffsetMs(b.timeZone) - getUtcOffsetMs(a.timeZone);
+      const byOffset = (a, b) => {
+        if (!a.timeZone || !b.timeZone) return !a.timeZone - !b.timeZone;
+        return getUtcOffsetMs(b.timeZone) - getUtcOffsetMs(a.timeZone);
+      };
       const active   = members.filter(m => !disabledMembers.has(m.name)).sort(byOffset);
       const disabled = members.filter(m =>  disabledMembers.has(m.name)).sort(byOffset);
       return { active, disabled };
@@ -363,7 +369,19 @@
       const { active, disabled } = sortByOffset();
       let body = '';
 
+      function buildUnknownRow(m, isDisabled) {
+        const title = isDisabled ? 'Click to show' : 'Click to hide';
+        return `<tr class="${isDisabled ? 'tl-row-disabled' : ''}">
+          <td class="tl-name-cell" data-member="${m.name.replace(/"/g,'&quot;')}" title="${title}">
+            <div class="tl-member-name">${m.name}</div>
+            <div class="tl-tz-label">Time zone unknown</div>
+          </td>
+          <td class="tl-cell tl-unknown${isDisabled ? ' slot-hidden' : ''}" colspan="24">???</td>
+        </tr>`;
+      }
+
       function buildRow(m, isDisabled) {
+        if (!m.timeZone) return buildUnknownRow(m, isDisabled);
         const hour0 = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), 0, 0, 0));
         const baseDay = new Date(hour0.toLocaleString("en-US", { timeZone: m.timeZone })).getDate();
         const localNow = new Date(now.toLocaleString("en-US", { timeZone: m.timeZone }));
@@ -485,8 +503,14 @@
       const grid = document.getElementById('announceGrid');
       grid.innerHTML = '';
       sortByLocalTime(new Date()).forEach(m => {
-        const h = getLocalHourForUtcDate(utcDate, m.timeZone);
         const item = document.createElement('div');
+        if (!m.timeZone) {
+          item.className = 'compact-item compact-unknown';
+          item.innerHTML = `<div class="compact-name">${m.name}</div><div class="compact-time">???</div>`;
+          grid.appendChild(item);
+          return;
+        }
+        const h = getLocalHourForUtcDate(utcDate, m.timeZone);
         item.className = `compact-item ${getSlotClass(h)}`;
         item.innerHTML = `<div class="compact-name">${m.name}</div><div class="compact-time">${dualFormatNoSeconds(utcDate, m.timeZone)}</div>`;
         grid.appendChild(item);
