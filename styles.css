@@ -16,6 +16,8 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.header-link-btn { margin-left: auto; margin-top: 0; }
+
 .page-header h1 {
   font-size: 1.45rem;
   margin: 0;
@@ -99,7 +101,33 @@ input:focus {
   margin-bottom: 0.75rem;
 }
 
-.tl-date-label { font-size: 0.95rem; font-weight: 600; color: #0f172a; flex: 1; }
+.tl-date-label { font-size: 0.95rem; font-weight: 600; color: #0f172a; white-space: nowrap; }
+/* Hint / selection bar sit at the right edge of the nav row */
+.tl-date-nav .tl-toggle-hint,
+.tl-date-nav .sel-bar { margin-left: auto; }
+.tl-date-sub   { font-size: 0.75rem; font-weight: 500; color: #94a3b8; margin-left: 0.4rem; }
+
+/* My time / UTC segmented toggle */
+.seg-toggle {
+  display: inline-flex;
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.seg-toggle button {
+  background: #ffffff;
+  border: none;
+  color: #6b7280;
+  height: 26px;
+  padding: 0 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg-toggle button + button { border-left: 1px solid #d1d5db; }
+.seg-toggle button:hover { background: #f1f5f9; color: #111827; }
+.seg-toggle button.active { background: #2563eb; color: #fff; font-weight: 600; }
 
 .tl-toggle-hint {
   font-size: 0.75rem;
@@ -239,6 +267,8 @@ input:focus {
   line-height: 1.4;
   white-space: nowrap;
 }
+/* First-column badge: which day this row starts on */
+.tl-day-badge.tl-day-start { background: #e2e8f0; color: #475569; }
 
 /* ── Selection bar — inline inside date nav, no layout shift ── */
 .sel-bar {
@@ -257,6 +287,29 @@ input:focus {
   color: #5b21b6;
   white-space: nowrap;
 }
+
+.sel-bar-sub {
+  font-size: 0.75rem;
+  color: #7c3aed;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.sel-bar-sub:empty { display: none; }
+
+.sel-bar-add {
+  background: #fff;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sel-bar-add:hover:not(:disabled) { background: #ede9fe; }
+.sel-bar-add:disabled { opacity: 0.6; cursor: default; }
 
 .sel-bar-announce {
   background: #7c3aed;
@@ -305,6 +358,11 @@ input:focus {
 .tl-badge-sel {
   background: #7c3aed;
   color: #fff;
+  padding: 0 4px;
+}
+.tl-badge-opt {
+  background: #ede9fe;
+  color: #6d28d9;
   padding: 0 4px;
 }
 
@@ -583,11 +641,57 @@ tbody tr:hover { background: #f5f8ff; }
 .poster .slot-okay { background-color: rgba(234, 179, 8, 0.20); }
 .poster .slot-bad  { background-color: rgba(99, 102, 241, 0.18); }
 
-#announcePosterCompact {
+.announce-poster {
   max-width: 760px;
   margin: 0 auto;
   padding: 0.6rem 0.7rem;
 }
+
+/* ── Multiple announcement options ── */
+.option-block { max-width: 760px; margin: 0 auto 1.5rem; }
+
+.option-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+.option-toolbar-label {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #374151;
+}
+.option-toolbar-label strong { color: #7c3aed; }
+
+.poster-option-badge {
+  display: inline-block;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  margin-right: 0.5rem;
+  vertical-align: 1px;
+}
+
+.quick-button-danger:hover { border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+
+.tab-count {
+  display: inline-block;
+  min-width: 1.1rem;
+  padding: 0 0.3rem;
+  margin-left: 0.2rem;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+}
+.tab-count:empty { display: none; }
 
 /* Flatpickr light-theme overrides */
 .flatpickr-calendar {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Crimson Cuckoo Coven — Time Zone Board</title>
+  <title>Time Zone Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <link rel="stylesheet" href="styles.css">
@@ -10,7 +10,8 @@
 <body>
 
   <div class="page-header">
-    <h1>Crimson Cuckoo Coven</h1>
+    <h1>Time Zone Board</h1>
+    <button id="copyPageLink" class="quick-button header-link-btn" title="Copy a link that restores this page exactly as it is now (hidden members, day, time options, event name)">🔗 Copy link</button>
     <div class="chip">
       <span class="chip-dot"></span>
       <span id="localTzLabel"></span>
@@ -21,23 +22,32 @@
 
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="current">Current Times</button>
-    <button class="tab-btn" data-tab="announce">Announcement</button>
+    <button class="tab-btn" data-tab="announce">Announcement <span id="announceCount" class="tab-count"></span></button>
   </div>
 
   <!-- ── Tab: Current Times ── -->
   <div class="tab-panel" id="panel-current">
     <div class="tl-date-nav">
       <button class="icon-btn" id="tlPrevDay">&#8249;</button>
-      <span id="tlDateLabel" class="tl-date-label"></span>
+      <span class="tl-date-label">
+        <span id="tlDateLabel"></span>
+        <span id="tlDateSub" class="tl-date-sub"></span>
+      </span>
       <button class="icon-btn" id="tlNextDay">&#8250;</button>
       <button class="icon-btn" id="tlCalBtn" title="Jump to date">&#128197;</button>
       <input type="date" id="tlDatePicker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
       <button class="icon-btn today-btn" id="tlToday">Today</button>
+      <div class="seg-toggle" id="tlModeToggle" title="Which time zone the day and columns are based on">
+        <button data-mode="local">My time</button>
+        <button data-mode="utc">UTC</button>
+      </div>
       <span class="tl-toggle-hint" id="tlHint">Drag columns to select a time · Click a name to hide/show</span>
       <!-- Selection bar — inline in nav, no layout shift -->
       <div id="selectionBar" class="sel-bar" style="display:none;">
         <span id="selectionLabel" class="sel-bar-label"></span>
-        <button id="btnAnnounceFromSel" class="sel-bar-announce"></button>
+        <span id="selectionSub" class="sel-bar-sub"></span>
+        <button id="btnAddOption" class="sel-bar-add" title="Add this time as an option and keep picking">+ Add option</button>
+        <button id="btnAnnounceFromSel" class="sel-bar-announce" title="Add this time as an option and go to Announcement">→ Announce</button>
         <button id="btnClearSel" class="sel-bar-clear" title="Clear selection">✕</button>
       </div>
     </div>
@@ -57,46 +67,29 @@
 
     <div id="announceContent" style="display:none;">
       <div class="card">
-        <div class="card-title" id="announceTitle">Event Announcement</div>
-        <div class="controls" style="margin-top:0.75rem;">
+        <div class="controls">
           <div class="control-group">
             <label>Event name</label>
             <input id="eventTitle" type="text" placeholder="e.g. Raid Night" style="max-width:300px;" />
           </div>
-          <div class="control-group">
-            <label>Time (UTC)</label>
-            <div id="announceUtc" class="highlight" style="margin-top:0.2rem;"></div>
-          </div>
-          <div class="control-group" style="min-width:220px;">
-            <label>Share</label>
+          <div class="control-group" style="min-width:260px;">
+            <label>All options</label>
             <div class="quick-buttons">
-              <button id="copyAnnounceImage" class="quick-button">Copy image</button>
-              <button id="downloadAnnounceImage" class="quick-button">Download PNG</button>
+              <button id="downloadAllImages" class="quick-button">Download all PNGs</button>
+              <button id="clearAllOptions" class="quick-button quick-button-danger">Clear all</button>
             </div>
-            <div class="small-note">Copy works best on HTTPS. Download works everywhere.</div>
+            <div class="small-note">Each option is its own image — paste them one at a time so people can react to each. Copy works best on HTTPS.</div>
           </div>
         </div>
       </div>
 
-      <div id="announcePosterCompact" class="card poster poster-compact">
-        <div class="poster-header">
-          <div>
-            <div class="card-title" id="announcePosterTitleCompact">Event Announcement</div>
-            <div class="small-note" id="announcePosterUtcLineCompact"></div>
-          </div>
-          <div class="chip">
-            <span class="chip-dot"></span>
-            <span>Crimson Cuckoo Coven</span>
-          </div>
-        </div>
-        <div class="compact-grid" id="announceGrid"></div>
-      </div>
+      <div id="announceOptions"></div>
     </div>
 
     <div id="announceEmpty" class="card announce-empty">
       <div class="announce-empty-icon">📅</div>
-      <div class="announce-empty-title">No announcement yet</div>
-      <div class="small-note">Go to <strong>Current Times</strong>, drag to select time columns, then click <strong>→ Announce</strong>.</div>
+      <div class="announce-empty-title">No time options yet</div>
+      <div class="small-note">Go to <strong>Current Times</strong>, drag to select a time, then click <strong>+ Add option</strong> (repeat for each time) or <strong>→ Announce</strong>.</div>
     </div>
 
   </div>
@@ -131,14 +124,27 @@
 
     const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    // ── Page state in the URL ──
+    // The hash always mirrors the current settings, so the address bar is a restorable link.
+    // When the page is opened with a hash, it wins over localStorage (missing keys = defaults).
+    const urlState = (() => {
+      const p = new URLSearchParams(location.hash.slice(1));
+      return p.toString() ? p : null;
+    })();
+    // Pasting a different link into an already-open tab only changes the hash — reload to apply it
+    window.addEventListener('hashchange', () => location.reload());
+
     // ── Tabs ──
+    let currentTab = 'current';
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
     function switchTab(id) {
+      currentTab = id;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
       document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.getElementById(`panel-${id}`).style.display = 'block';
+      syncUrl();
     }
 
     // ── Formatters ──
@@ -186,8 +192,37 @@
       const now = new Date();
       return new Date(now.toLocaleString("en-US", { timeZone: tz })) - now;
     }
-    function getUtcDayStart(date) {
-      return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+    // ── Zone-aware date math ──
+    const HOUR = 3600000, DAY = 86400000;
+    const partsFmtCache = {};
+    // Wall-clock parts of instant t (ms) in time zone tz
+    function zoneParts(t, tz) {
+      const f = partsFmtCache[tz] || (partsFmtCache[tz] = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hourCycle: 'h23', weekday: 'short',
+        year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric',
+      }));
+      const p = {};
+      for (const { type, value } of f.formatToParts(new Date(t))) p[type] = value;
+      return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, wd: p.weekday };
+    }
+    function zoneOffsetAt(t, tz) {
+      const p = zoneParts(t, tz);
+      return Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi) - Math.floor(t / 60000) * 60000;
+    }
+    // dayMs = Date.UTC(y, m, d) calendar date → instant of local midnight on that date in tz
+    function zonedMidnight(dayMs, tz) {
+      const t = dayMs - zoneOffsetAt(dayMs, tz);
+      return dayMs - zoneOffsetAt(t, tz);
+    }
+    // Calendar date (as Date.UTC(y, m, d)) that instant t falls on in tz
+    function calendarDayIn(t, tz) {
+      const p = zoneParts(t, tz);
+      return Date.UTC(p.y, p.mo - 1, p.d);
+    }
+    function fmtHour12(h) { return `${h % 12 || 12}${h < 12 ? 'am' : 'pm'}`; }
+    function fmtShortDate(t, tz) {
+      return new Date(t).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz });
     }
 
     // Members with no known time zone sort to the end
@@ -200,7 +235,9 @@
     }
 
     // ── Member visibility toggle ──
-    let disabledMembers = new Set(JSON.parse(localStorage.getItem('ccc-disabled') || '[]'));
+    let disabledMembers = new Set(urlState
+      ? (urlState.get('hide') || '').split('|').filter(Boolean)
+      : JSON.parse(localStorage.getItem('ccc-disabled') || '[]'));
 
     function toggleMember(name) {
       if (disabledMembers.has(name)) disabledMembers.delete(name);
@@ -268,12 +305,16 @@
         const c = parseInt(th.dataset.col);
         const isNow = th.classList.contains('tl-cur');
         const isSelFirst = selStart !== null && c === selStart;
+        const optIdx = announceOptions.indexOf(colTime(c));
         if (isNow) {
           badge.textContent = 'NOW';
           badge.className = 'tl-col-badge tl-badge-now';
         } else if (isSelFirst) {
-          badge.textContent = `${String(selStart).padStart(2,'0')}:00`;
+          badge.textContent = colLabel(selStart);
           badge.className = 'tl-col-badge tl-badge-sel';
+        } else if (optIdx !== -1) {
+          badge.textContent = `OPT ${optIdx + 1}`;
+          badge.className = 'tl-col-badge tl-badge-opt';
         } else {
           badge.textContent = '';
           badge.className = 'tl-col-badge';
@@ -290,16 +331,24 @@
         return;
       }
 
-      const dayStart = getUtcDayStart(tlViewDate);
-      const dateStr = dayStart.toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-      });
-      const s = `${String(selStart).padStart(2,'0')}:00`;
-      const e = `${String(selEnd).padStart(2,'0')}:00`;
-      const rangeStr = selStart === selEnd ? `${s} UTC` : `${s}–${e} UTC`;
+      const t0 = colTime(selStart), t1 = colTime(selEnd);
+      const utcHH = t => `${String(new Date(t).getUTCHours()).padStart(2,'0')}:00`;
+      const utcRange = selStart === selEnd ? `${utcHH(t0)} UTC` : `${utcHH(t0)}–${utcHH(t1)} UTC`;
+      const utcStr = `${fmtShortDate(t0, 'UTC')} · ${utcRange}`;
 
-      document.getElementById('selectionLabel').textContent = `${dateStr} · ${rangeStr}`;
-      document.getElementById('btnAnnounceFromSel').textContent = `→ Announce at ${s} UTC`;
+      if (tlMode === 'local') {
+        const l0 = colLabel(selStart), l1 = colLabel(selEnd);
+        const localRange = selStart === selEnd ? l0 : `${l0}–${l1}`;
+        document.getElementById('selectionLabel').textContent = `${fmtShortDate(t0, localTimeZone)} · ${localRange} your time`;
+        document.getElementById('selectionSub').textContent = `= ${utcStr}`;
+      } else {
+        document.getElementById('selectionLabel').textContent = utcStr;
+        document.getElementById('selectionSub').textContent = '';
+      }
+      const already = announceOptions.includes(t0);
+      const addBtn = document.getElementById('btnAddOption');
+      addBtn.textContent = already ? `✓ Option ${announceOptions.indexOf(t0) + 1}` : '+ Add option';
+      addBtn.disabled = already;
       hint.style.display = 'none';
       bar.style.display  = 'flex';
     }
@@ -332,36 +381,78 @@
 
     document.getElementById('btnClearSel').addEventListener('click', () => clearSelection());
 
+    document.getElementById('btnAddOption').addEventListener('click', () => {
+      if (selStart === null) return;
+      addOption(colTime(selStart));
+      clearSelection();
+    });
+
     document.getElementById('btnAnnounceFromSel').addEventListener('click', () => {
       if (selStart === null) return;
-      const dayStart = getUtcDayStart(tlViewDate);
-      const utcDate = new Date(Date.UTC(
-        dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), selStart, 0, 0
-      ));
+      addOption(colTime(selStart));
+      clearSelection();
       switchTab('announce');
-      renderAnnouncement(utcDate);
     });
 
     // ── Timeline ──
-    let tlViewDate = new Date();
+    // 'local' = columns are the viewer's own day; 'utc' = columns are a UTC day
+    let tlMode = 'local';
+    if (urlState) { if (urlState.get('mode') === 'utc') tlMode = 'utc'; }
+    else { try { if (localStorage.getItem('ccc-tl-mode') === 'utc') tlMode = 'utc'; } catch {} }
+    const refTz = () => tlMode === 'local' ? localTimeZone : 'UTC';
+
+    let tlViewDay = calendarDayIn(Date.now(), refTz()); // Date.UTC(y, m, d) of the viewed day
+    {
+      const m = (urlState?.get('day') || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) tlViewDay = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    }
     let tlFirstRender = true;
-    let tlLastHour = -1;
+    let tlLastCol = -1;
+
+    function tlBase() { return zonedMidnight(tlViewDay, refTz()); }
+    function colTime(c) { return tlBase() + c * HOUR; }
+    // Column's hour as shown in the reference zone
+    function colLabel(c) {
+      const h = zoneParts(colTime(c), refTz()).h;
+      return tlMode === 'local' ? fmtHour12(h) : `${String(h).padStart(2,'0')}:00`;
+    }
+    // Column index containing "now", or -1 if now isn't in the viewed day
+    function currentCol() {
+      const c = Math.floor((Date.now() - tlBase()) / HOUR);
+      return c >= 0 && c < 24 ? c : -1;
+    }
 
     function renderTimeline() {
-      const dayStart = getUtcDayStart(tlViewDate);
+      const base = tlBase();
       const now = new Date();
-      const isToday = dayStart.getTime() === getUtcDayStart(now).getTime();
-      const currentUtcHour = now.getUTCHours();
+      const nowCol = currentCol();
+      const isToday = nowCol !== -1;
 
-      document.getElementById('tlDateLabel').textContent = dayStart.toLocaleDateString('en-US', {
+      document.querySelectorAll('#tlModeToggle button').forEach(b =>
+        b.classList.toggle('active', b.dataset.mode === tlMode));
+
+      document.getElementById('tlDateLabel').textContent = new Date(tlViewDay).toLocaleDateString('en-US', {
         weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
       });
+      document.getElementById('tlDateSub').textContent = tlMode === 'local'
+        ? `your time · ${getZoneLabel(localTimeZone)}`
+        : 'UTC';
 
       // Header
       let head = '<tr><th class="tl-name-th">Member</th>';
       for (let h = 0; h < 24; h++) {
-        const cur = isToday && h === currentUtcHour;
-        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}" data-col="${h}"><span class="tl-col-badge"></span>${h}<span class="tl-utc-sub">UTC</span></th>`;
+        const cur = h === nowCol;
+        const t = base + h * HOUR;
+        let main, sub;
+        if (tlMode === 'local') {
+          main = fmtHour12(zoneParts(t, localTimeZone).h);
+          const uh = new Date(t).getUTCHours();
+          sub = uh === 0 ? `${fmtShortDate(t, 'UTC').split(',')[0]} 00 UTC` : `${String(uh).padStart(2,'0')} UTC`;
+        } else {
+          main = h;
+          sub = 'UTC';
+        }
+        head += `<th class="tl-hour-th${cur ? ' tl-cur' : ''}" data-col="${h}" title="${fmtShortDate(t, refTz())}"><span class="tl-col-badge"></span>${main}<span class="tl-utc-sub">${sub}</span></th>`;
       }
       head += '</tr>';
       document.getElementById('tlHead').innerHTML = head;
@@ -383,8 +474,6 @@
 
       function buildRow(m, isDisabled) {
         if (!m.timeZone) return buildUnknownRow(m, isDisabled);
-        const hour0 = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), 0, 0, 0));
-        const baseDay = new Date(hour0.toLocaleString("en-US", { timeZone: m.timeZone })).getDate();
         const localNow = new Date(now.toLocaleString("en-US", { timeZone: m.timeZone }));
         const lh = localNow.getHours(), lm = localNow.getMinutes();
         const lh12 = lh % 12 || 12, lap = lh < 12 ? 'am' : 'pm';
@@ -397,20 +486,21 @@
             ${isToday ? `<div class="tl-live-time" data-tz="${m.timeZone}">${lh12}:${String(lm).padStart(2,'0')} ${lap}</div>` : ''}
           </td>`;
 
-        let prevDay = baseDay;
+        let prevDay = null;
         for (let h = 0; h < 24; h++) {
-          const utcMoment = new Date(Date.UTC(dayStart.getUTCFullYear(), dayStart.getUTCMonth(), dayStart.getUTCDate(), h, 0, 0));
-          const localMoment = new Date(utcMoment.toLocaleString("en-US", { timeZone: m.timeZone }));
-          const localHour = localMoment.getHours();
-          const localDay = localMoment.getDate();
+          const p = zoneParts(base + h * HOUR, m.timeZone);
+          const localHour = p.h;
           const h12 = localHour % 12 || 12, ap = localHour < 12 ? 'am' : 'pm';
           const slotCls = isDisabled ? 'slot-hidden' : getSlotClass(localHour);
-          const cur = isToday && h === currentUtcHour;
-          const dayChanged = localDay !== prevDay;
-          prevDay = localDay;
+          const cur = h === nowCol;
+          // Badge the first column (which day the row starts on) and every day change
+          const dayBadge = h === 0
+            ? `<div class="tl-day-badge tl-day-start">${p.wd} ${p.d}</div>`
+            : p.d !== prevDay ? `<div class="tl-day-badge">${p.wd} ${p.d}</div>` : '';
+          prevDay = p.d;
 
           row += `<td class="tl-cell ${slotCls}${cur ? ' tl-cur' : ''}" data-col="${h}">
-            ${dayChanged ? `<div class="tl-day-badge">${localMoment.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:m.timeZone})}</div>` : ''}
+            ${dayBadge}
             <div class="tl-hr">${h12}</div>
             <div class="tl-ap">${ap}</div>
           </td>`;
@@ -426,13 +516,14 @@
 
       document.getElementById('tlBody').innerHTML = body;
       applySelectionClasses();
+      syncUrl();
 
       if (tlFirstRender && isToday) {
         tlFirstRender = false;
         requestAnimationFrame(() => {
           const w = document.getElementById('tlScrollWrapper');
           const cellW = 54, nameW = 185;
-          w.scrollLeft = Math.max(0, nameW + currentUtcHour * cellW - w.clientWidth / 2 + cellW / 2);
+          w.scrollLeft = Math.max(0, nameW + nowCol * cellW - w.clientWidth / 2 + cellW / 2);
         });
       }
     }
@@ -456,17 +547,30 @@
 
     // Day nav
     document.getElementById('tlPrevDay').addEventListener('click', () => {
-      tlViewDate = new Date(tlViewDate.getTime() - 86400000);
+      tlViewDay -= DAY;
       clearSelection();
       renderTimeline();
     });
     document.getElementById('tlNextDay').addEventListener('click', () => {
-      tlViewDate = new Date(tlViewDate.getTime() + 86400000);
+      tlViewDay += DAY;
       clearSelection();
       renderTimeline();
     });
     document.getElementById('tlToday').addEventListener('click', () => {
-      tlViewDate = new Date();
+      tlViewDay = calendarDayIn(Date.now(), refTz());
+      tlFirstRender = true;
+      clearSelection();
+      renderTimeline();
+    });
+
+    document.getElementById('tlModeToggle').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-mode]');
+      if (!btn || btn.dataset.mode === tlMode) return;
+      // If viewing today, stay on today in the new zone; otherwise keep the same calendar date
+      const wasToday = currentCol() !== -1;
+      tlMode = btn.dataset.mode;
+      try { localStorage.setItem('ccc-tl-mode', tlMode); } catch {}
+      if (wasToday) tlViewDay = calendarDayIn(Date.now(), refTz());
       tlFirstRender = true;
       clearSelection();
       renderTimeline();
@@ -474,100 +578,226 @@
 
     document.getElementById('tlCalBtn').addEventListener('click', () => {
       const picker = document.getElementById('tlDatePicker');
-      const y = tlViewDate.getUTCFullYear();
-      const m = String(tlViewDate.getUTCMonth() + 1).padStart(2, '0');
-      const d = String(tlViewDate.getUTCDate()).padStart(2, '0');
-      picker.value = `${y}-${m}-${d}`;
+      picker.value = new Date(tlViewDay).toISOString().slice(0, 10);
       picker.showPicker();
     });
 
     document.getElementById('tlDatePicker').addEventListener('change', e => {
       if (!e.target.value) return;
       const [y, mo, d] = e.target.value.split('-').map(Number);
-      tlViewDate = new Date(Date.UTC(y, mo - 1, d));
+      tlViewDay = Date.UTC(y, mo - 1, d);
       clearSelection();
       renderTimeline();
     });
 
-    // ── Announcement ──
-    let currentAnnounceUtc = null;
+    // ── Announcement (multiple time options, one poster each) ──
+    // announceOptions: sorted UTC timestamps (ms). Persisted per browser; past times are dropped on load.
+    let announceOptions = [];
+    try {
+      const saved = urlState
+        ? (urlState.get('opts') || '').split(',').filter(Boolean).map(s => Date.parse(s))
+        : JSON.parse(localStorage.getItem('ccc-announce-options') || '[]');
+      announceOptions = [...new Set(saved)]
+        .filter(t => typeof t === 'number' && !isNaN(t) && t >= Date.now() - HOUR)
+        .sort((a, b) => a - b);
+    } catch {}
+    try {
+      document.getElementById('eventTitle').value = urlState
+        ? (urlState.get('title') || '')
+        : (localStorage.getItem('ccc-event-title') || '');
+    } catch {}
 
-    function renderAnnouncement(utcDate) {
-      currentAnnounceUtc = utcDate;
-      const title = (document.getElementById('eventTitle').value.trim() || 'Event Announcement');
-      updatePosterTitle(title);
+    function saveOptions() {
+      try { localStorage.setItem('ccc-announce-options', JSON.stringify(announceOptions)); } catch {}
+    }
 
-      const utcPretty = dualFormatNoSeconds(utcDate, "UTC");
-      document.getElementById('announceUtc').innerHTML = utcPretty;
-      document.getElementById('announcePosterUtcLineCompact').innerHTML = `UTC: <span class="highlight">${utcPretty}</span>`;
+    function onOptionsChanged() {
+      saveOptions();
+      renderAnnouncements();
+      applySelectionClasses();
+      if (selStart !== null) updateSelectionBar();
+    }
 
-      const grid = document.getElementById('announceGrid');
-      grid.innerHTML = '';
-      sortByLocalTime(new Date()).forEach(m => {
-        const item = document.createElement('div');
+    function addOption(t) {
+      if (announceOptions.includes(t)) return;
+      announceOptions.push(t);
+      announceOptions.sort((a, b) => a - b);
+      onOptionsChanged();
+    }
+
+    function removeOption(t) {
+      announceOptions = announceOptions.filter(x => x !== t);
+      onOptionsChanged();
+    }
+
+    const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+    function eventTitle() {
+      return document.getElementById('eventTitle').value.trim() || 'Event Announcement';
+    }
+
+    function buildPosterGrid(utcDate) {
+      return sortByLocalTime(utcDate).map(m => {
         if (!m.timeZone) {
-          item.className = 'compact-item compact-unknown';
-          item.innerHTML = `<div class="compact-name">${m.name}</div><div class="compact-time">???</div>`;
-          grid.appendChild(item);
-          return;
+          return `<div class="compact-item compact-unknown"><div class="compact-name">${m.name}</div><div class="compact-time">???</div></div>`;
         }
         const h = getLocalHourForUtcDate(utcDate, m.timeZone);
-        item.className = `compact-item ${getSlotClass(h)}`;
-        item.innerHTML = `<div class="compact-name">${m.name}</div><div class="compact-time">${dualFormatNoSeconds(utcDate, m.timeZone)}</div>`;
-        grid.appendChild(item);
-      });
-
-      document.getElementById('announceContent').style.display = 'block';
-      document.getElementById('announceEmpty').style.display = 'none';
+        return `<div class="compact-item ${getSlotClass(h)}"><div class="compact-name">${m.name}</div><div class="compact-time">${dualFormatNoSeconds(utcDate, m.timeZone)}</div></div>`;
+      }).join('');
     }
 
-    function updatePosterTitle(title) {
-      const t = title || 'Event Announcement';
-      document.getElementById('announceTitle').textContent = t;
-      document.getElementById('announcePosterTitleCompact').textContent = t;
+    function renderAnnouncements() {
+      syncUrl();
+      const n = announceOptions.length;
+      document.getElementById('announceCount').textContent = n ? n : '';
+      document.getElementById('announceContent').style.display = n ? 'block' : 'none';
+      document.getElementById('announceEmpty').style.display = n ? 'none' : '';
+
+      const title = escapeHtml(eventTitle());
+      document.getElementById('announceOptions').innerHTML = announceOptions.map((t, i) => {
+        const utcDate = new Date(t);
+        const optLabel = n > 1 ? `Option ${i + 1}` : '';
+        const myTime = `${fmtShortDate(t, localTimeZone)} · ${utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: localTimeZone })} your time`;
+        return `
+          <div class="option-block" data-t="${t}">
+            <div class="option-toolbar">
+              <span class="option-toolbar-label">${optLabel ? `<strong>${optLabel}</strong> · ` : ''}${myTime}</span>
+              <button class="quick-button" data-act="copy">Copy image</button>
+              <button class="quick-button" data-act="download">Download PNG</button>
+              <button class="quick-button quick-button-danger" data-act="remove" title="Remove this option">Remove</button>
+            </div>
+            <div class="card poster poster-compact announce-poster">
+              <div class="poster-header">
+                <div>
+                  <div class="card-title">${optLabel ? `<span class="poster-option-badge">${optLabel}</span>` : ''}${title}</div>
+                  <div class="small-note">UTC: <span class="highlight">${dualFormatNoSeconds(utcDate, 'UTC')}</span></div>
+                </div>
+                <div class="chip">
+                  <span class="chip-dot"></span>
+                  <span>Time Zone Board</span>
+                </div>
+              </div>
+              <div class="compact-grid">${buildPosterGrid(utcDate)}</div>
+            </div>
+          </div>`;
+      }).join('');
     }
 
-    // Live title update
     document.getElementById('eventTitle').addEventListener('input', e => {
-      updatePosterTitle(e.target.value.trim());
+      try { localStorage.setItem('ccc-event-title', e.target.value); } catch {}
+      renderAnnouncements();
     });
 
-    async function posterToCanvas() {
-      const el = document.getElementById('announcePosterCompact');
-      const prev = el.style.display;
-      el.style.display = 'block';
-      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true });
-      el.style.display = prev;
-      return canvas;
+    async function posterToCanvas(el) {
+      return html2canvas(el, { backgroundColor: null, scale: 2, useCORS: true });
     }
 
-    document.getElementById("copyAnnounceImage").addEventListener("click", async () => {
-      try {
-        const blob = await new Promise(res => posterToCanvas().then(c => c.toBlob(res, "image/png")));
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      } catch { alert("Copy failed (requires HTTPS). Use Download PNG instead."); }
+    function posterFileName(t) {
+      const i = announceOptions.indexOf(t);
+      const slug = eventTitle().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'event';
+      return announceOptions.length > 1 ? `${slug}-option-${i + 1}.png` : `${slug}.png`;
+    }
+
+    async function downloadPoster(block) {
+      const t = Number(block.dataset.t);
+      const canvas = await posterToCanvas(block.querySelector('.announce-poster'));
+      const a = document.createElement('a');
+      a.download = posterFileName(t);
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    function flashButton(btn, text) {
+      const orig = btn.dataset.origText || (btn.dataset.origText = btn.textContent);
+      btn.textContent = text;
+      clearTimeout(btn._flashTimer);
+      btn._flashTimer = setTimeout(() => { btn.textContent = orig; }, 1800);
+    }
+
+    document.getElementById('announceOptions').addEventListener('click', async e => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const block = btn.closest('.option-block');
+      const t = Number(block.dataset.t);
+      if (btn.dataset.act === 'remove') return removeOption(t);
+      if (btn.dataset.act === 'download') return downloadPoster(block);
+      if (btn.dataset.act === 'copy') {
+        try {
+          // Pass the blob as a promise so Safari keeps the user-gesture context
+          const blob = posterToCanvas(block.querySelector('.announce-poster'))
+            .then(c => new Promise(res => c.toBlob(res, 'image/png')));
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          flashButton(btn, 'Copied ✓');
+        } catch { alert('Copy failed (requires HTTPS). Use Download PNG instead.'); }
+      }
     });
 
-    document.getElementById("downloadAnnounceImage").addEventListener("click", async () => {
-      const canvas = await posterToCanvas();
-      const a = document.createElement("a");
-      a.download = "event-announcement.png";
-      a.href = canvas.toDataURL("image/png");
-      a.click();
+    document.getElementById('downloadAllImages').addEventListener('click', async () => {
+      for (const block of document.querySelectorAll('#announceOptions .option-block')) {
+        await downloadPoster(block);
+        await new Promise(r => setTimeout(r, 300)); // give the browser a beat between downloads
+      }
+    });
+
+    document.getElementById('clearAllOptions').addEventListener('click', () => {
+      if (!confirm('Remove all time options?')) return;
+      announceOptions = [];
+      onOptionsChanged();
+    });
+
+    // ── URL state: write ──
+    let urlSyncReady = false; // don't write the hash until init has finished
+    function stateToHash() {
+      const p = new URLSearchParams();
+      if (currentTab !== 'current') p.set('tab', currentTab);
+      if (tlMode !== 'local') p.set('mode', tlMode);
+      // Only pin the day when it isn't today, so a saved link otherwise opens on "today"
+      if (tlViewDay !== calendarDayIn(Date.now(), refTz())) p.set('day', new Date(tlViewDay).toISOString().slice(0, 10));
+      if (disabledMembers.size) p.set('hide', [...disabledMembers].join('|'));
+      if (announceOptions.length) p.set('opts', announceOptions.map(t => new Date(t).toISOString().slice(0, 16) + 'Z').join(','));
+      const title = document.getElementById('eventTitle').value.trim();
+      if (title) p.set('title', title);
+      // Always emit at least one key so opening the link uses the URL instead of localStorage
+      return p.toString() || 'v=1';
+    }
+    function syncUrl() {
+      if (!urlSyncReady) return;
+      try { history.replaceState(null, '', '#' + stateToHash()); } catch {}
+    }
+
+    document.getElementById('copyPageLink').addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      syncUrl();
+      try {
+        await navigator.clipboard.writeText(location.href);
+        flashButton(btn, 'Link copied ✓');
+      } catch {
+        prompt('Copy this link:', location.href);
+      }
     });
 
     // ── Init ──
+    if (urlState) {
+      // Opened from a link: adopt its settings as this browser's saved settings too
+      try {
+        localStorage.setItem('ccc-disabled', JSON.stringify([...disabledMembers]));
+        localStorage.setItem('ccc-tl-mode', tlMode);
+        localStorage.setItem('ccc-event-title', document.getElementById('eventTitle').value);
+      } catch {}
+      saveOptions();
+    }
+    urlSyncReady = true;
+    if (urlState?.get('tab') === 'announce') switchTab('announce');
     renderTimeline();
+    renderAnnouncements();
     updateLocalNow();
 
     setInterval(() => {
       updateLocalNow();
-      const now = new Date();
-      const isViewingToday = getUtcDayStart(tlViewDate).getTime() === getUtcDayStart(now).getTime();
-      if (!isViewingToday) return;
-      const h = now.getUTCHours();
-      if (h !== tlLastHour) {
-        tlLastHour = h;
+      const c = currentCol();
+      if (c === -1) return;
+      if (c !== tlLastCol) {
+        tlLastCol = c;
         const w = document.getElementById('tlScrollWrapper');
         const s = w.scrollLeft;
         renderTimeline();
